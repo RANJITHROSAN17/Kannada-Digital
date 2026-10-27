@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# HashRouter + relative asset base mean no redirect rule is needed for deep
+# links. This catch-all is kept as a safety net for future routing changes.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

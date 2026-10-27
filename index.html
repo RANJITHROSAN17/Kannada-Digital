@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Kannada Saathi — Speak Kannada with confidence</title>
+    <meta
+      name="description"
+      content="Kannada Saathi helps non-Kannada speakers communicate in real life across Karnataka: situation-based phrases, transliteration, pronunciation playback, role-play conversations and quizzes. Works offline."
+    />
+    <meta name="theme-color" content="#131B31" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Kannada Saathi" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <!--
+      No external fonts or scripts on purpose: the CSS falls back to the OS-level
+      Kannada fonts (Nirmala UI / Tunga / Kannada MN), so the app renders fully
+      offline and inside restricted demo environments.
+    -->
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      <div style="max-width: 36rem; margin: 3rem auto; padding: 1.5rem; font-family: system-ui, sans-serif; line-height: 1.6;">
+        <h1>Kannada Saathi needs JavaScript</h1>
+        <p>Please enable JavaScript and reload. The app has no server component — all content is
+        bundled in the page you just downloaded.</p>
+      </div>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
