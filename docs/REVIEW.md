@@ -203,6 +203,7 @@ Chromium 1280 px + 390 px → 10 routes, all interaction flows, 0 console/page/r
 CI + Pages deploy         → both green on the upgraded lockfile
 ```
 
-GitHub re-scans `package-lock.json` on push, so the 17 alerts should transition to **fixed/closed**
-automatically; if any remain open, they are stale alerts from the previous commit and can be dismissed with
-"Fixed in <commit>".
+**Confirmed on GitHub after the push:** `GET /repos/.../dependabot/alerts?state=open` returns **0 open
+alerts** — all 17 are marked `fixed` (timestamped 2026-10-27T19:18:47Z+). CI and the Pages deploy both
+completed successfully on the upgraded lockfile. The push-time banner GitHub printed ("found 17
+vulnerabilities") was the stale graph snapshot from before the push; the API reflects the new state.
