@@ -108,7 +108,7 @@ A ready-made workflow lives in [`.github/workflows/deploy.yml`](.github/workflow
 | Added `docs/REVIEW.md`, `docs/SUBMISSION.md`, refreshed screenshots and font licences | Judges get an evidence-backed review, a submission checklist and images that exist. |
 
 See [`docs/REVIEW.md`](docs/REVIEW.md) for the full severity-ranked findings, verification evidence and the
-remaining recommendations (including the dev-only `npm audit` advisories).
+remaining recommendations (including the `npm audit` advisories).
 
 ---
 

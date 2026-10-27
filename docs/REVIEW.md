@@ -46,7 +46,7 @@ judge's laptop, on a college LAN, or with no internet. Those were real, and are 
 | F5 | **Medium** | The deploy job ran `npx vite build` (bypassing the `npm run build` typecheck gate) and omitted `actions/configure-pages`. There was no CI workflow for pull requests or non-`main` branches. | `.github/workflows/deploy.yml`; only one workflow in the repo. |
 | F6 | **Low** | React Router v6 emitted two v7 future-flag warnings in every test run and in the dev console — cosmetic, but it makes a demo log look unhealthy. | `npm test` stderr, `behavior.test.tsx` and `PhraseCard.test.tsx`. |
 | F7 | **Low** | `.env.example` told users `VITE_BASE_PATH` was "needed" for Pages; the README repeated it. After the relative-base fix this is wrong. The optional `VITE_AI_PROXY_URL` documentation was accurate and worth keeping. | `.env.example`, README §2 deploy table. |
-| F8 | **Info** | `npm audit` reports 8 advisories in the **dev toolchain only**: 2 critical (`vitest`, `tinypool`), 1 high (`vite`), 5 moderate (`react-router-dom`, `esbuild`, `vite-node`, `@vitest/mocker`, `react-router`). Non-breaking fixes are unavailable — patched versions require major upgrades (Vite 8, Vitest 4, React Router 7). No advisory affects shipped browser code. | `npm audit --json`; installed versions Vite 5.4.21, Vitest 2.1.9, react-router-dom 6.30.6. |
+| F8 | **Info** | `npm audit` reports 8 advisories: 2 critical (`vitest`, `tinypool`), 1 high (`vite`) and 3 moderate (`esbuild`, `vite-node`, `@vitest/mocker`) are **dev-tooling only**; 2 moderate (`react-router`, `react-router-dom` 6.30.6) are runtime. The runtime ones cover an open redirect via `<Link>`/`useNavigate` and an **SSR hydration** flaw — this app is a static `HashRouter` SPA, does no SSR, and every `to` target is a hard-coded internal route, so neither path is reachable here. Non-breaking fixes are unavailable; patched versions require major upgrades (Vite 8, Vitest 4, React Router 7.18+). | `npm audit --json` and `npm audit --omit=dev --json` (2 moderate runtime, 0 high/critical). |
 | F9 | **Info** | Repository history mixed two unrelated projects (an earlier Python `mcp_doctor` snapshot and this app) with manual upload/delete commits. The correct app commit is preserved as `archive/vexar-mcp-snapshot`; an independent clean-room rebuild is preserved as `alternative/arena-rebuild`. | `git log --all`. |
 
 ### What was already excellent (kept unchanged)
@@ -138,9 +138,11 @@ above from a fresh clone.
 
 1. **Native-speaker review** of the 4 `needs-native-review` phrases before any public release; the flag already
    exists — resolve it rather than hiding it.
-2. **Dev-dependency major upgrades after the hackathon**: Vite 8 / Vitest 4 / React Router 7 clear the 8
-   `npm audit` advisories. Do this on a branch with a full browser pass; upgrading during submission week is
-   unnecessary risk because the advisories are dev-tooling only and do not ship to the browser.
+2. **Dependency major upgrades after the hackathon**: Vite 8 / Vitest 4 / React Router 7.18+ clear all 8
+   `npm audit` advisories. Six are dev-tooling only; the two runtime ones are moderate, not reachable in this
+   static SPA (no SSR, no user-controlled navigation targets). Do it on a branch with a full browser pass —
+   React Router 7 also changes the `future` flags used in `App.tsx`. Upgrading during submission week is
+   unnecessary risk.
 3. **Kannada TTS**: document per-OS installation of a `kn-IN` voice, or bundle short recordings of the most
    common phrases. The current UI already degrades honestly.
 4. **Speech recognition is network-backed in Chrome** and absent in iOS Safari — keep the typed fallback in the
