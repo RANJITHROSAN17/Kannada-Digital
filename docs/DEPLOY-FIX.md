@@ -1,10 +1,20 @@
 # Deploy the speaker-audio fix to GitHub Pages
 
-The fix is committed locally as `410215b` on branch `user-app-fixes`, but it has **not been pushed** to GitHub
-because no fresh GitHub credentials are available in this workspace. The local preview on port **4173** already
-serves the fixed build, so you can test the speaker icon there immediately.
+**Status: pushed and live (28 October 2026).** Commit `f3c5550` was pushed to `main`; GitHub Actions `CI` and
+`Deploy to GitHub Pages` both completed successfully. The live site at
+`https://ranjithrosan17.github.io/Kannada-Digital/` now serves the fixed build, including
+`public/audio/*.mp3`, `audio-precache.js` and `asset-precache.js`.
 
-To update the live submission URL `https://ranjithrosan17.github.io/Kannada-Digital/`, push the commit:
+Verified on the public URL in headless Chromium:
+
+- speaker click → `/audio/kn-0164.mp3` (HTTP 206 range response), `paused=false`, `currentTime≈1.0s`, `error=null`
+- status line: “Playing recorded Kannada pronunciation — works even without a system Kannada voice”
+- service worker `kannada-saathi-v4` precached 298 URLs; with the browser offline, a reload still rendered and
+  the speaker played the cached MP3
+- 0 console / page / request errors
+
+The commands below are kept as a reference for any **future** push. The token used for this push has been
+deleted from the workspace and should now be revoked/rotated.
 
 ```bash
 cd /home/user/Kannada-Digital-clone
