@@ -11,7 +11,8 @@
 
 > ✅ **Reviewed & hardened (27 Oct 2026):** the app now bundles its Kannada + Latin fonts, ships a real
 > service worker / PWA manifest, uses a relative asset base that deploys anywhere, has exactly one `<h1>` per
-> route, and is gated by CI. Full findings and evidence: [`docs/REVIEW.md`](docs/REVIEW.md).
+> route, is gated by CI, and has **0 `npm audit` vulnerabilities** (all 17 Dependabot alerts resolved).
+> Full findings and evidence: [`docs/REVIEW.md`](docs/REVIEW.md).
 > Submission checklist: [`docs/SUBMISSION.md`](docs/SUBMISSION.md).
 
 ---
@@ -59,7 +60,7 @@ starter set is reviewable and growable, so a native speaker can improve the app 
 
 ## 2. Run it
 
-Requires **Node 18+**. No backend, no API key, no account.
+Requires **Node 20.19+ or Node 22.12+** (Vite 8 requirement; Node 22 is used in CI). No backend, no API key, no account.
 
 ```bash
 npm install          # once
@@ -73,12 +74,14 @@ npm run build        # type-check (tsc --noEmit) + production bundle into dist/
 npm run preview      # serve the built dist/ locally on :4173
 npm run typecheck    # tsc --noEmit only
 npm test             # vitest run  (80 tests, incl. dataset-integrity tests)
+npm audit            # 0 vulnerabilities (also enforced in CI)
 npm run test:watch   # watch mode
 ```
 
-Verified in this repo after the review: `npm run typecheck` → 0 errors · `npm test` → **7 files / 80 tests
-passed** · `npm run build` → `dist/` 373 kB JS (115 kB gzipped) + 39 kB CSS (7 kB gzipped) + 89 kB Kannada font +
-48 kB Inter font · real Chromium at 1280 px and 390 px with **0 console / page / request errors**, a full quiz
+Verified in this repo after the security upgrade: `npm run typecheck` → 0 errors · `npm test` → **7 files / 80
+tests passed** · `npm run build` → `dist/` 391 kB JS (119 kB gzipped) + 37 kB CSS (7 kB gzipped) + 89 kB Kannada
+font + 48 kB Inter font · `npm audit` → **0 vulnerabilities** · real Chromium at 1280 px and 390 px with **0
+console / page / request errors**, a full quiz
 round reaching the result screen, favourites surviving a reload, the offline assistant returning the right phrase,
 voice typed scoring, and `document.fonts.check(...)` confirming both bundled faces load. All 12 screenshots in
 `docs/screenshots/` were recaptured from this build.
@@ -104,11 +107,11 @@ A ready-made workflow lives in [`.github/workflows/deploy.yml`](.github/workflow
 | Added `public/manifest.webmanifest` + `public/sw.js` (registered in production only) | The README claimed "offline-first"; there was no service worker. The app shell is now cached and installable. |
 | Default `base: './'` in `vite.config.ts` + `HashRouter` | One `dist/` works at a domain root, a GitHub Pages sub-path, Netlify, or a plain folder — no `VITE_BASE_PATH` juggling. |
 | `SectionHeading` gained a `level` prop; each route now has exactly one `<h1>` | Screen readers and heading navigation previously started at `<h2>` on 7 of 10 routes. |
-| Added `ci.yml`, `configure-pages` in `deploy.yml`, React Router v7 future flags | CI gates every push; React Router future-flag warnings removed from dev/test output. |
+| Added `ci.yml` (with an `npm audit` gate) and `configure-pages` in `deploy.yml`; upgraded to React Router 7 | CI gates every push; the router major upgrade removed the future-flag warnings at the source. |
 | Added `docs/REVIEW.md`, `docs/SUBMISSION.md`, refreshed screenshots and font licences | Judges get an evidence-backed review, a submission checklist and images that exist. |
 
 See [`docs/REVIEW.md`](docs/REVIEW.md) for the full severity-ranked findings, verification evidence and the
-remaining recommendations (including the `npm audit` advisories).
+remaining recommendations and the full Dependabot remediation log.
 
 ---
 
@@ -299,8 +302,9 @@ conversation playthrough and quiz feedback — plus the dataset integrity suite 
 
 ## 11. Stack
 
-React 18 · TypeScript 5.6 (strict) · Vite 5 · Tailwind CSS 3 · lucide-react · react-router-dom 6 (HashRouter) ·
-Vitest 2 + Testing Library + jsdom. No state library, no CSS-in-JS, no backend, no runtime data fetch.
+React 18 · TypeScript 5.6 (strict) · Vite 8.3.5 · Tailwind CSS 3 · lucide-react · react-router-dom 7.18.4
+(HashRouter) · Vitest 4.1.12 + Testing Library + jsdom. No state library, no CSS-in-JS, no backend, no runtime
+data fetch. `npm audit` reports 0 vulnerabilities in both development and production dependency trees.
 
 ## 12. Licence & credit
 

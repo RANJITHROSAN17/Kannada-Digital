@@ -29,8 +29,9 @@ judge's laptop, on a college LAN, or with no internet. Those were real, and are 
 | Deploy portability | ⚠️ `base: '/'`, Pages required `VITE_BASE_PATH` from repo name | ✅ `base: './'` — one `dist/` works anywhere |
 | Heading structure | ⚠️ 7 of 10 routes had no `<h1>` | ✅ exactly one `<h1>` per route |
 | CI | ⚠️ checks only inside the deploy job on `main` | ✅ dedicated `ci.yml` on every push/PR + deploy job |
-| Console noise | ⚠️ React Router v7 future-flag warnings | ✅ future flags opted in |
+| Console noise | ⚠️ React Router v6 future-flag warnings | ✅ resolved by upgrading to React Router 7 |
 | Tests / typecheck / build | ✅ 80 passing, 0 errors | ✅ 80 passing, 0 errors (unchanged) |
+| `npm audit` / Dependabot | ❌ 17 alerts (3 critical, 1 high, 12 moderate, 1 low) | ✅ **0 alerts**, `npm audit` clean |
 | Browser verification | ✅ claimed 0 console errors | ✅ independently re-verified, 0 errors |
 
 ---
@@ -44,9 +45,9 @@ judge's laptop, on a college LAN, or with no internet. Those were real, and are 
 | F3 | **Medium** | `vite.config.ts` defaulted to `base: '/'`, so a plain `npm run build` produces a `dist/` that breaks on a GitHub Pages sub-path. The deploy workflow compensated by deriving `VITE_BASE_PATH` from the repo name — fragile for forks, Netlify, Vercel and LAN folders, and easy to forget locally. | `const base = env.VITE_BASE_PATH \|\| '/'`. |
 | F4 | **Medium** | `SectionHeading` always rendered `<h2>`, so **7 of 10 routes had no `<h1>`** — screen-reader heading navigation and document outline started at level 2. | `src/components/ui.tsx`; verified with a DOM query across all routes. |
 | F5 | **Medium** | The deploy job ran `npx vite build` (bypassing the `npm run build` typecheck gate) and omitted `actions/configure-pages`. There was no CI workflow for pull requests or non-`main` branches. | `.github/workflows/deploy.yml`; only one workflow in the repo. |
-| F6 | **Low** | React Router v6 emitted two v7 future-flag warnings in every test run and in the dev console — cosmetic, but it makes a demo log look unhealthy. | `npm test` stderr, `behavior.test.tsx` and `PhraseCard.test.tsx`. |
+| F6 | **Low (resolved)** | React Router v6 emitted two v7 future-flag warnings in every test run and in the dev console — cosmetic, but it makes a demo log look unhealthy. | `npm test` stderr, `behavior.test.tsx` and `PhraseCard.test.tsx`. |
 | F7 | **Low** | `.env.example` told users `VITE_BASE_PATH` was "needed" for Pages; the README repeated it. After the relative-base fix this is wrong. The optional `VITE_AI_PROXY_URL` documentation was accurate and worth keeping. | `.env.example`, README §2 deploy table. |
-| F8 | **Info** | `npm audit` reports 8 advisories: 2 critical (`vitest`, `tinypool`), 1 high (`vite`) and 3 moderate (`esbuild`, `vite-node`, `@vitest/mocker`) are **dev-tooling only**; 2 moderate (`react-router`, `react-router-dom` 6.30.6) are runtime. The runtime ones cover an open redirect via `<Link>`/`useNavigate` and an **SSR hydration** flaw — this app is a static `HashRouter` SPA, does no SSR, and every `to` target is a hard-coded internal route, so neither path is reachable here. Non-breaking fixes are unavailable; patched versions require major upgrades (Vite 8, Vitest 4, React Router 7.18+). | `npm audit --json` and `npm audit --omit=dev --json` (2 moderate runtime, 0 high/critical). |
+| F8 | **High (resolved)** | `npm audit` originally reported 8 advisories (GitHub Dependabot expanded these to 17 alerts): 2 critical (`vitest`, `tinypool`), 1 high (`vite`) and 3 moderate (`esbuild`, `vite-node`, `@vitest/mocker`) are **dev-tooling only**; 2 moderate (`react-router`, `react-router-dom` 6.30.6) are runtime. The runtime ones cover an open redirect via `<Link>`/`useNavigate` and an **SSR hydration** flaw — this app is a static `HashRouter` SPA, does no SSR, and every `to` target is a hard-coded internal route, so neither path is reachable here. **Resolved (§8):** upgraded to Vite 8.3.5, Vitest 4.1.12, @vitejs/plugin-react 6.1.2 and react-router-dom 7.18.4; `esbuild`, `launch-editor`, `tinypool` and `vite-node` no longer appear in the tree. | `npm audit --json` → 0; `npm audit --omit=dev --json` → 0. |
 | F9 | **Info** | Repository history mixed two unrelated projects (an earlier Python `mcp_doctor` snapshot and this app) with manual upload/delete commits. The correct app commit is preserved as `archive/vexar-mcp-snapshot`; an independent clean-room rebuild is preserved as `alternative/arena-rebuild`. | `git log --all`. |
 
 ### What was already excellent (kept unchanged)
@@ -82,7 +83,8 @@ judge's laptop, on a college LAN, or with no internet. Those were real, and are 
 4. **Accessible headings.** `SectionHeading` now accepts `level?: 'h1' | 'h2'`; the page-level instance on
    each route uses `level="h1"`, in-page sections stay at `h2`. Home and the situation/conversation detail pages
    keep their existing explicit `<h1>`.
-5. **Cleaner output.** React Router v7 future flags opted in for `HashRouter` and test `MemoryRouter`s.
+5. **Cleaner output.** Upgraded to React Router 7 (which makes the v7 behaviours the default) and removed the
+   now-obsolete `future` props from `HashRouter` and the test `MemoryRouter`s.
 6. **Accurate docs.** `.env.example` and README now describe the optional base path correctly; README gained a
    review summary, three new screenshots, updated verification numbers, font licences and links to this review
    and the submission checklist. `PROJECT-SUMMARY.md` marks the PWA item as done. All 12 screenshots in
@@ -97,10 +99,11 @@ No dataset phrase, quiz rule, speech behaviour, route or test assertion was chan
 ```text
 npm run typecheck  → 0 errors (strict, noUnusedLocals, noUnusedParameters)
 npm test           → 80 passed, 7 files, ~7.5 s, no React Router warnings
-npm run build      → dist/assets/index-*.js   373.46 kB │ gzip 114.81 kB
-                     dist/assets/index-*.css   39.08 kB │ gzip   7.37 kB
+npm run build      → dist/assets/index-*.js   390.98 kB │ gzip 118.65 kB
+                     dist/assets/index-*.css   37.11 kB │ gzip   7.31 kB
                      dist/assets/*.woff2        89 KB + 48 KB
-npm audit          → 8 dev-only advisories (documented; no runtime exposure)
+npm audit          → 0 vulnerabilities (all)
+npm audit --omit=dev → 0 vulnerabilities (runtime tree)
 
 Headless Chromium 156 (1280×900 and 390×844), 10 routes:
   - every route has exactly one h1 and renders its expected title
@@ -138,11 +141,8 @@ above from a fresh clone.
 
 1. **Native-speaker review** of the 4 `needs-native-review` phrases before any public release; the flag already
    exists — resolve it rather than hiding it.
-2. **Dependency major upgrades after the hackathon**: Vite 8 / Vitest 4 / React Router 7.18+ clear all 8
-   `npm audit` advisories. Six are dev-tooling only; the two runtime ones are moderate, not reachable in this
-   static SPA (no SSR, no user-controlled navigation targets). Do it on a branch with a full browser pass —
-   React Router 7 also changes the `future` flags used in `App.tsx`. Upgrading during submission week is
-   unnecessary risk.
+2. **Keep the toolchain current.** The dependency majors were already upgraded as part of this review (see §8),
+   and `ci.yml` now fails on any new moderate-or-higher advisory. Re-run `npm audit` after adding packages.
 3. **Kannada TTS**: document per-OS installation of a `kn-IN` voice, or bundle short recordings of the most
    common phrases. The current UI already degrades honestly.
 4. **Speech recognition is network-backed in Chrome** and absent in iOS Safari — keep the typed fallback in the
@@ -160,3 +160,49 @@ Kannada Saathi was already a submission-worthy project. The changes above remove
 fail in front of a judge — **missing Kannada glyphs and a hard dependency on network fonts** — and back the
 "offline-first" claim with a real service worker and manifest. A fresh clone now installs, tests, builds,
 deploys and renders correctly with no internet access.
+
+
+---
+
+## 8. Dependabot alerts — resolved (follow-up, 27 October 2026)
+
+**Question asked:** "have you fixed all these vulnerabilities?" — the original review documented them but left
+them open. They are now fixed. GitHub listed **17 open alerts** (3 critical, 1 high, 12 moderate, 1 low). All
+trace back to four outdated direct dependencies. There is no code-level workaround; the fix is a dependency
+upgrade, so I did a clean reinstall with patched majors.
+
+| Alerts | Package | Old | New | Result |
+| --- | --- | --- | --- | --- |
+| #3, #8, #9, #17 | `vitest`, `@vitest/mocker`, `vite-node` | 2.1.9 | **4.1.12** | Patched; `vitest@4` pulls `@vitest/mocker@4.1.12`. |
+| #10, #11 | `tinypool` (transitive) | 1.1.1 | **removed** | Vitest 4 no longer depends on the vulnerable `tinypool` line. |
+| #1 | `esbuild` (transitive) | 0.21.5 | **removed** | Vite 8 uses a patched esbuild range; the old 0.21 line is gone. |
+| #2, #4, #5, #12, #13, #14, #15, #16 | `vite`, `launch-editor` (transitive) | 5.4.21 | **8.3.5** | All eight Vite/launch-editor advisories patched. |
+| #6, #7 | `react-router` / `react-router-dom` | 6.30.6 | **7.18.4** | Open-redirect and SSR-hydration advisories patched. |
+| — | `@vitejs/plugin-react` (peer) | 4.7.0 | **6.1.2** | Required peer for Vite 8. |
+
+**Changes made**
+
+- `package.json` / `package-lock.json`: bumped the five packages above, regenerated the lockfile from a clean
+  `npm install` (no `--force`, no `--legacy-peer-deps`, so the peer graph is genuinely consistent).
+- `src/App.tsx` and two test files: removed the `future={{ v7_* }}` props, which React Router 7 no longer
+  accepts (the behaviours are now the default).
+- `.github/workflows/ci.yml`: added `npm audit --audit-level=moderate` as a hard gate and set Node 22.
+- `.github/workflows/deploy.yml` and `netlify.toml`: set Node 22 (Vite 8 requires ≥20.19 / ≥22.12).
+- README, `SUBMISSION.md`, `PRESENTATION-OUTLINE.md`, `REVIEW.md`: corrected versions, Node requirement,
+  bundle sizes and the "remaining recommendation" that is no longer outstanding.
+
+**Verification after the upgrade**
+
+```text
+npm audit                 → found 0 vulnerabilities
+npm audit --omit=dev      → found 0 vulnerabilities
+npm run typecheck         → 0 errors
+npm test                  → 80 passed, 7 files (Vitest 4.1.12)
+npm run build             → 390.98 kB JS (118.65 kB gzip), 37.11 kB CSS, fonts bundled
+Chromium 1280 px + 390 px → 10 routes, all interaction flows, 0 console/page/request errors
+CI + Pages deploy         → both green on the upgraded lockfile
+```
+
+GitHub re-scans `package-lock.json` on push, so the 17 alerts should transition to **fixed/closed**
+automatically; if any remain open, they are stale alerts from the previous commit and can be dismissed with
+"Fixed in <commit>".

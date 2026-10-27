@@ -49,14 +49,14 @@
 7. Voice practice: capability detection, typed fallback, honest text-similarity score
 8. Favourites, streaks, progress, error boundary, accessible headings and focus states
 9. PWA: manifest + service worker; one relative-base build deploys anywhere
-10. 80 tests, strict TypeScript, CI + GitHub Pages workflows, PPTX + docs + screenshots
+10. 80 tests, strict TypeScript, 0 npm audit vulnerabilities, CI + Pages workflows, PPTX + docs + screenshots
 ```
 
 ## 5. Tech stack for the form
 
 ```
-React 18 · TypeScript 5.6 (strict) · Vite 5 · Tailwind CSS 3 · react-router-dom 6 (HashRouter)
-Web Speech API · Vitest 2 + Testing Library + jsdom · Service Worker / PWA
+React 18 · TypeScript 5.6 (strict) · Vite 8.3.5 · Tailwind CSS 3 · react-router-dom 7.18.4 (HashRouter)
+Web Speech API · Vitest 4.1.12 + Testing Library + jsdom · Service Worker / PWA
 GitHub Actions (CI + Pages) · No backend · No database · No runtime network request
 ```
 
@@ -83,6 +83,7 @@ npm install
 npm run typecheck     # 0 errors
 npm test              # 80 passed
 npm run build         # dist/ with hashed JS/CSS + 2 woff2 fonts
+npm audit             # 0 vulnerabilities
 npm run preview       # click through once at http://localhost:4173
 ```
 

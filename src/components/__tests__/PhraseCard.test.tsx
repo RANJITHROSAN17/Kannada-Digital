@@ -8,7 +8,7 @@ import { progressStorageKey } from '../../services/storage';
 
 function renderCard(phrase = phrases[0]) {
   return render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter>
       <ProgressProvider>
         <PhraseCard phrase={phrase} />
       </ProgressProvider>

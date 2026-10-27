@@ -19,7 +19,7 @@ import { CulturePage } from './pages/CulturePage';
 export default function App() {
   return (
     <ProgressProvider>
-      <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <HashRouter>
         <AppShell>
           <Routes>
             <Route path="/" element={<HomePage />} />

@@ -3,7 +3,7 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22"
 
 # The app uses HashRouter, so no redirect rule is needed for deep links.
 # This catch-all is here only in case you switch to BrowserRouter later.
