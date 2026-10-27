@@ -424,7 +424,7 @@ def build():
         ("scene-bus.png", "Role-play \u00b7 reply, coaching note, alternatives"),
         ("quiz-result.png", "Quiz \u00b7 score, best kept, misses as review cards"),
         ("practice.png", "Voice practice \u00b7 capability + typed fallback"),
-        ("mobile.png", "390 px \u00b7 bottom tab bar, one-thumb use"),
+        ("mobile-situations.png", "390 px \u00b7 situation detail, one-thumb use"),
     ]
     cell_w, cell_h = 3.95, 1.95
     left0, top0 = 0.62, 1.72
