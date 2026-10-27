@@ -53,7 +53,7 @@ export function PhrasebookPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <SectionHeading
+      <SectionHeading level="h1"
         eyebrow={`${phrases.length} reviewed lines`}
         title="Searchable phrasebook"
         description="Search Kannada script, transliteration, English meaning or any keyword. Results rank the meaning match first."

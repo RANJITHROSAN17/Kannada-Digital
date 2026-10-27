@@ -1,11 +1,18 @@
 # Kannada Saathi — ಕನ್ನಡ ಸಾಥಿ
 
+[![CI](https://github.com/RANJITHROSAN17/Kannada-Digital/actions/workflows/ci.yml/badge.svg)](https://github.com/RANJITHROSAN17/Kannada-Digital/actions/workflows/ci.yml) [![Deploy](https://github.com/RANJITHROSAN17/Kannada-Digital/actions/workflows/deploy.yml/badge.svg)](https://github.com/RANJITHROSAN17/Kannada-Digital/actions/workflows/deploy.yml)
+
 > **Speak Kannada. Navigate Karnataka with confidence.**
 >
 > An offline-first, mobile-first communication companion for non-Kannada speakers in Karnataka — built for the
 > **Kannada Digital Innovation Hackathon 2026** (HackerRank Campus Crew · NIE Mysuru).
 >
 > **Problem statement chosen: #3 — Kannada in Everyday Life** (with #2 *Voice of Kannada* as a supporting capability).
+
+> ✅ **Reviewed & hardened (27 Oct 2026):** the app now bundles its Kannada + Latin fonts, ships a real
+> service worker / PWA manifest, uses a relative asset base that deploys anywhere, has exactly one `<h1>` per
+> route, and is gated by CI. Full findings and evidence: [`docs/REVIEW.md`](docs/REVIEW.md).
+> Submission checklist: [`docs/SUBMISSION.md`](docs/SUBMISSION.md).
 
 ---
 
@@ -41,6 +48,11 @@ starter set is reviewable and growable, so a native speaker can improve the app 
     <td><img src="docs/screenshots/practice.png" alt="Voice practice" width="330"><br><sub>Voice practice · capability report + typed fallback</sub></td>
     <td><img src="docs/screenshots/mobile.png" alt="Mobile layout" width="200"><br><sub>390 px · bottom tab bar</sub></td>
   </tr>
+  <tr>
+    <td><img src="docs/screenshots/ask-result.png" alt="Offline assistant" width="330"><br><sub>Offline "what do I say?" assistant · no API key</sub></td>
+    <td><img src="docs/screenshots/phrasebook.png" alt="Phrasebook" width="330"><br><sub>Searchable phrasebook · 111 reviewed lines</sub></td>
+    <td><img src="docs/screenshots/culture.png" alt="Culture notes" width="330"><br><sub>Culture notes · politeness and register</sub></td>
+  </tr>
 </table>
 
 ---
@@ -64,10 +76,12 @@ npm test             # vitest run  (80 tests, incl. dataset-integrity tests)
 npm run test:watch   # watch mode
 ```
 
-Verified in this repo: `npm run typecheck` → 0 errors · `npm test` → **7 files / 80 tests passed** ·
-`npm run build` → `dist/` 373 kB of JS (115 kB gzipped) + 38 kB of CSS (7 kB gzipped) · checked in real Chromium
-at 1280 px and 390 px with **0 console errors**, including a full quiz round (6 questions + 5-pair matching round)
-writing `quizAttempts` / `bestQuiz` to `localStorage` and surviving a reload.
+Verified in this repo after the review: `npm run typecheck` → 0 errors · `npm test` → **7 files / 80 tests
+passed** · `npm run build` → `dist/` 373 kB JS (115 kB gzipped) + 39 kB CSS (7 kB gzipped) + 89 kB Kannada font +
+48 kB Inter font · real Chromium at 1280 px and 390 px with **0 console / page / request errors**, a full quiz
+round reaching the result screen, favourites surviving a reload, the offline assistant returning the right phrase,
+voice typed scoring, and `document.fonts.check(...)` confirming both bundled faces load. All 12 screenshots in
+`docs/screenshots/` were recaptured from this build.
 
 ### Deploy it (for the "live URL" deliverable)
 
@@ -75,11 +89,26 @@ The app uses `HashRouter`, so **any static host works with zero rewrite rules** 
 
 | Host | What to do |
 | --- | --- |
-| **GitHub Pages** | Push, then run the included workflow (*Actions → Deploy to GitHub Pages*). If the site is served from `https://<user>.github.io/<repo>/`, add `VITE_BASE_PATH=/<repo>/` to `.env.local` **or** set the variable in the workflow's env. |
+| **GitHub Pages** | Push to `main`; the included workflow runs typecheck + tests + build and deploys. Enable *Settings → Pages → Source: GitHub Actions* once. **No env var needed** — the relative asset base handles the `/<repo>/` sub-path. |
 | **Netlify / Vercel** | Build command `npm run build`, publish directory `dist`. No env vars needed. |
 | **College LAN / any nginx** | `npm run build` and copy `dist/` into the web root. |
 
-A ready-made workflow lives in [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
+A ready-made workflow lives in [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml), and
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the same checks on every push and pull request.
+
+### What the engineering review changed
+
+| Fix | Why it matters for a live demo |
+| --- | --- |
+| Bundled `Noto Sans Kannada` + `Inter` woff2 locally (`src/assets/`), removed the Google Fonts `<link>` and added `Saathi Kannada` to both Tailwind font stacks | Kannada rendered as empty boxes on Linux/container machines with no system Kannada font, and the external request broke offline use. Now verified: `document.fonts.check()` is `true`, zero external requests. |
+| Added `public/manifest.webmanifest` + `public/sw.js` (registered in production only) | The README claimed "offline-first"; there was no service worker. The app shell is now cached and installable. |
+| Default `base: './'` in `vite.config.ts` + `HashRouter` | One `dist/` works at a domain root, a GitHub Pages sub-path, Netlify, or a plain folder — no `VITE_BASE_PATH` juggling. |
+| `SectionHeading` gained a `level` prop; each route now has exactly one `<h1>` | Screen readers and heading navigation previously started at `<h2>` on 7 of 10 routes. |
+| Added `ci.yml`, `configure-pages` in `deploy.yml`, React Router v7 future flags | CI gates every push; React Router future-flag warnings removed from dev/test output. |
+| Added `docs/REVIEW.md`, `docs/SUBMISSION.md`, refreshed screenshots and font licences | Judges get an evidence-backed review, a submission checklist and images that exist. |
+
+See [`docs/REVIEW.md`](docs/REVIEW.md) for the full severity-ranked findings, verification evidence and the
+remaining recommendations (including the dev-only `npm audit` advisories).
 
 ---
 
@@ -204,8 +233,10 @@ src/
 
 ## 7. Accessibility & responsiveness
 
-* Kannada is marked `lang="kn"` with a dedicated font stack (`Noto Sans Kannada` → `Tunga` → `Nirmala UI` → OS
-  Kannada fallbacks), so script renders even with no network and no webfont.
+* Kannada is marked `lang="kn"` with a dedicated font stack (`Saathi Kannada` → `Noto Sans Kannada` →
+  `Tunga` → `Nirmala UI` → OS fallbacks). Both faces are bundled locally, so script renders with no network and
+  no system Kannada font — verified in headless Chromium, including the header tagline.
+* Every route now exposes exactly one `<h1>`; in-page sections remain `<h2>`.
 * Skip link, visible focus rings, `role="search"`, `aria-pressed` on toggles, `aria-live` status regions for
   playback/recognition/quiz feedback, labelled form controls, keyboard-operable nav, and
   `prefers-reduced-motion` respected.
@@ -258,6 +289,11 @@ conversation playthrough and quiz feedback — plus the dataset integrity suite 
 | Presentation outline (if you prefer to build your own deck) | [`docs/PRESENTATION-OUTLINE.md`](docs/PRESENTATION-OUTLINE.md) |
 | 2-minute live demo script + 3–5 minute video walkthrough script | [`docs/DEMO-SCRIPT.md`](docs/DEMO-SCRIPT.md) |
 | Environment template | [`.env.example`](.env.example) (optional — the app needs nothing) |
+| Engineering review (findings, fixes, verification evidence) | [`docs/REVIEW.md`](docs/REVIEW.md) |
+| Unstop submission checklist + ready-to-paste description | [`docs/SUBMISSION.md`](docs/SUBMISSION.md) |
+| CI + Pages workflows | [`.github/workflows/`](.github/workflows) |
+| Offline PWA (manifest + service worker) | `public/manifest.webmanifest`, `public/sw.js` |
+| Bundled font licences (SIL OFL 1.1) | [`docs/licenses/`](docs/licenses) |
 
 ---
 
@@ -268,6 +304,8 @@ Vitest 2 + Testing Library + jsdom. No state library, no CSS-in-JS, no backend, 
 
 ## 12. Licence & credit
 
-Built as an individual hackathon entry. Phrase data is curated for everyday usability and should be reviewed by a
+Built as an individual hackathon entry. App code is MIT (see [`LICENSE`](LICENSE)). Bundled fonts —
+Noto Sans Kannada and Inter — are licensed under the SIL Open Font License 1.1; copies are in
+[`docs/licenses/`](docs/licenses). Phrase data is curated for everyday usability and should be reviewed by a
 native speaker before redistribution as a reference. Emergency numbers cited in the app (112 all-India emergency,
 108 ambulance in Karnataka) should be confirmed against current local services before use.

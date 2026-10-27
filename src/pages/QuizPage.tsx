@@ -232,7 +232,7 @@ export function QuizPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <SectionHeading
+      <SectionHeading level="h1"
         eyebrow="Guided practice"
         title="Quiz yourself before you need it"
         description="Four question types built from the same reviewed dataset: meaning both ways, listening, and real-life judgement. Repeated attempts keep your best score."

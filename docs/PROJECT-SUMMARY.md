@@ -100,5 +100,6 @@ Differentiators judges can see in the demo: **local-first reliability** (nothing
 2. Offline Kannada TTS via a bundled small model, or a documented `kn-IN` voice install path per OS.
 3. A real pronunciation-scoring experiment with a forced-alignment model, behind an explicit "experimental" flag.
 4. Situation packs for government counters, rent/agreement conversations and parent–teacher meetings.
-5. A PWA install path (manifest + service worker) for one-tap offline use.
+5. ~~A PWA install path (manifest + service worker)~~ — **done**: `public/manifest.webmanifest` +
+   `public/sw.js` now ship, with the service worker registered in production builds.
 6. An "add a phrase" contribution flow with the same validation tests the bundled data must pass.

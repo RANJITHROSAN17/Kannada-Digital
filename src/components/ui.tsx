@@ -29,19 +29,23 @@ export function SectionHeading({
   title,
   description,
   action,
+  level = 'h2',
 }: {
   eyebrow?: string;
   title: string;
   description?: string;
   action?: ReactNode;
+  /** Use 'h1' for the single page title; in-page sections stay at h2. */
+  level?: 'h1' | 'h2';
 }) {
+  const Heading = level;
   return (
     <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
       <div className="max-w-2xl">
         {eyebrow ? (
           <p className="mb-1 text-xs font-bold uppercase tracking-[0.18em] text-saffron-600">{eyebrow}</p>
         ) : null}
-        <h2 className="text-xl font-bold text-ink-800 sm:text-2xl">{title}</h2>
+        <Heading className="text-xl font-bold text-ink-800 sm:text-2xl">{title}</Heading>
         {description ? <p className="mt-1.5 text-sm text-ink-400">{description}</p> : null}
       </div>
       {action}

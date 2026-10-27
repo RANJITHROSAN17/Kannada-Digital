@@ -53,7 +53,7 @@ export function ConversationsPage() {
   const progress = useProgress();
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <SectionHeading
+      <SectionHeading level="h1"
         eyebrow="Role-play"
         title="Real-life conversation simulator"
         description="Six scenes that happen to everyone in Karnataka. Choose your reply, see what comes back, and read why it worked."

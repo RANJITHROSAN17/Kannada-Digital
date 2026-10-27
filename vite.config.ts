@@ -6,13 +6,14 @@ import react from '@vitejs/plugin-react';
 /**
  * Kannada Saathi build configuration.
  *
- * `VITE_BASE_PATH` lets the same static build be served from a sub-directory
- * (e.g. GitHub Pages: https://<user>.github.io/kannada-saathi/). It defaults to
- * "/" so `npm run dev` and hosts such as Netlify/Vercel need no configuration.
+ * `VITE_BASE_PATH` can override the static asset base for unusual hosts. It
+ * defaults to './' (relative assets) so one build works at a domain root, on a
+ * GitHub Pages sub-path, and in any plain folder. Combined with HashRouter this
+ * means zero rewrite rules and no required environment variable at deploy time.
  */
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
-  const base = env.VITE_BASE_PATH || '/';
+  const base = env.VITE_BASE_PATH || './';
 
   return {
     base,

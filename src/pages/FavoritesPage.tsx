@@ -57,7 +57,7 @@ export function FavoritesPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <SectionHeading
+      <SectionHeading level="h1"
         eyebrow="Saved on this device"
         title="My Favorites"
         description={

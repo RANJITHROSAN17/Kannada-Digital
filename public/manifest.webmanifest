@@ -1,0 +1,13 @@
+{
+  "name": "Kannada Saathi — Speak Kannada with confidence",
+  "short_name": "Kannada Saathi",
+  "description": "Offline-first everyday Kannada phrasebook, conversations, role-play, voice practice and quizzes.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FDF7EA",
+  "theme_color": "#131B31",
+  "icons": [
+    { "src": "./favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

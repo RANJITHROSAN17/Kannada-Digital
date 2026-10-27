@@ -114,7 +114,7 @@ export function VoicePracticePage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <SectionHeading
+      <SectionHeading level="h1"
         eyebrow="Voice of Kannada"
         title="Voice practice with honest feedback"
         description="Say the line, or type what you heard yourself say. You get a text-match score against the target — never a fake “accent rating”."

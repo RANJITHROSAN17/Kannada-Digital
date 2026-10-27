@@ -14,3 +14,11 @@ createRoot(container).render(
     </ErrorBoundary>
   </StrictMode>,
 );
+
+// Progressive enhancement: cache the app shell after the first production
+// visit so the phrasebook keeps working with no network. Skipped in dev.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => undefined);
+  });
+}

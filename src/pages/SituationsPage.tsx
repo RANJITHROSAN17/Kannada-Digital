@@ -16,7 +16,7 @@ export function SituationsPage() {
   const progress = useProgress();
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <SectionHeading
+      <SectionHeading level="h1"
         eyebrow="Situation first"
         title="Pick the moment you are about to face"
         description="Each situation holds the sentences that actually end the interaction — asked, answered, done."

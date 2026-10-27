@@ -10,24 +10,24 @@
     />
     <meta name="theme-color" content="#131B31" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Kannada Saathi" />
+    <link rel="manifest" href="./manifest.webmanifest" />
     <!--
-      Webfonts are progressive enhancement only: the CSS always falls back to
-      system Kannada fonts (Nirmala UI / Tunga / Kannada MN), so the app is
-      fully readable offline or if fonts.googleapis.com is blocked.
+      Zero external requests: Inter and Noto Sans Kannada are bundled in
+      src/assets/ and referenced from src/index.css, so Kannada renders on a
+      machine with no system Kannada font and with no internet connection.
     -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
   </head>
   <body>
     <div id="root"></div>
-    <noscript
-      >Kannada Saathi needs JavaScript enabled. Please enable it and reload, or see the README for the
-      static preview.</noscript
-    >
+    <noscript>
+      <div style="max-width:36rem;margin:3rem auto;padding:1.5rem;font-family:system-ui,sans-serif;line-height:1.6">
+        <h1>Kannada Saathi needs JavaScript</h1>
+        <p>Enable JavaScript and reload. The app has no server component — all
+        content is bundled in the page you just downloaded.</p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

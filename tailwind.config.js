@@ -46,11 +46,15 @@ export default {
           'Roboto',
           'Helvetica Neue',
           'Arial',
+          // Guaranteed Kannada fallback for any plain text node that is not
+          // explicitly marked with .knn (e.g. the brand tagline in the header).
+          'Saathi Kannada',
           'sans-serif',
         ],
         // Kannada must render even when the webfont fails to load, so the
         // Noto stack is always followed by OS-level Kannada fallbacks.
         kannada: [
+          'Saathi Kannada',
           'Noto Sans Kannada',
           'Tunga',
           'Nirmala UI',

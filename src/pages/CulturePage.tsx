@@ -23,7 +23,7 @@ export function CulturePage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <SectionHeading
+      <SectionHeading level="h1"
         eyebrow="Not decoration"
         title="Language and culture, stated carefully"
         description="Kannada Saathi keeps context beside the sentence it belongs to. Where we are not certain, the app says so instead of guessing."

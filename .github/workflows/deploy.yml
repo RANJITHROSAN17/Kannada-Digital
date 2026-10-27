@@ -27,13 +27,10 @@ jobs:
       # Type-check and tests gate the deploy: a red build never goes live.
       - run: npm run typecheck
       - run: npm test
-      # VITE_BASE_PATH is required when Pages serves the site from /<repo>/.
-      # The action publishes at https://<owner>.github.io/<repo>/, so derive it.
-      - name: Build
-        run: |
-          npx vite build
-        env:
-          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+      # Relative asset base + HashRouter: one build works on the Pages
+      # sub-path, so no VITE_BASE_PATH is required.
+      - run: npm run build
+      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
