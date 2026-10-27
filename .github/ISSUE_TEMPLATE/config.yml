@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: "🎯 Pick up a Good First Issue"
+    url: "https://github.com/RANJITHROSAN17/mcp-doctor/labels/good%20first%20issue"
+    about: "Browse contributor-ready tasks curated automatically by our Roadmap Bot."
+  - name: "📖 Architecture & Contributor Guide"
+    url: "https://github.com/RANJITHROSAN17/mcp-doctor/blob/main/CONTRIBUTING.md"
+    about: "Learn how to add a new lint rule, parser, or output reporter in ~10 minutes."

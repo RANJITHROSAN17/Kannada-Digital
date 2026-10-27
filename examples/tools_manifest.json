@@ -1,0 +1,25 @@
+{
+  "tools": [
+    {
+      "name": "list_kubeflow_runs",
+      "description": "List recent Kubeflow Pipelines runs in a namespace with bounded pagination.",
+      "inputSchema": {
+        "type": "object",
+        "required": ["namespace"],
+        "properties": {
+          "namespace": {
+            "type": "string",
+            "maxLength": 63,
+            "description": "Kubernetes namespace owning the pipeline runs."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Maximum number of runs to return."
+          }
+        }
+      }
+    }
+  ]
+}

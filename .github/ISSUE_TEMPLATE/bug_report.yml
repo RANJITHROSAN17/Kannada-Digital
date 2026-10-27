@@ -1,0 +1,25 @@
+name: Bug Report / False Positive
+description: Report a bug, crash, or false-positive lint diagnostic
+title: "fix: "
+labels: ["type/bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the unexpected behavior or false positive.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal Reproduction Snippet
+      description: Paste a minimal MCP tool snippet or `tools.json` entry that reproduces the issue.
+      render: python
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Python & mcp-doctor Version
+      placeholder: "Python 3.12, mcp-doctor 0.1.0"
