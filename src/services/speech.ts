@@ -1,10 +1,14 @@
 /**
- * Browser Web Speech API wrapper.
+ * Speech layer.
  *
- * Design rule: never claim a capability the browser does not have. Everything
- * the UI reports about voices, recognition and pronunciation scoring comes
- * from these checks, and every entry point degrades to a typed fallback.
+ * Design rule: never claim a capability the browser does not have, and never
+ * make the speaker button depend on a `kn-IN` voice that most browsers do not
+ * ship. Every static Kannada line in the app is played from a bundled MP3
+ * recorded with a real Kannada voice. Browser speech synthesis is kept only as
+ * a fallback for text that is not in the dataset, and it speaks the
+ * transliteration when no Kannada voice is available.
  */
+import { pronunciationAudioUrl } from './pronunciationAudio';
 
 export interface SpeechCapabilities {
   /** Text-to-speech engine exists at all. */
@@ -110,10 +114,14 @@ export function onVoicesChanged(callback: () => void): () => void {
   return () => synth.removeEventListener?.('voiceschanged', callback);
 }
 
+export type SpeakSource = 'recording' | 'browser-tts';
+
 export interface SpeakOptions {
   /** Prefer the Kannada voice; falls back to the browser default. */
   preferKannada?: boolean;
   rate?: number;
+  /** Latin-script text to speak when the browser has no Kannada voice. */
+  fallbackText?: string;
   onStart?: () => void;
   onEnd?: () => void;
   onError?: (message: string) => void;
@@ -124,75 +132,222 @@ export interface SpeakResult {
   /** The voice actually used, so the UI can be explicit about what it did. */
   voiceName: string | null;
   usedKannadaVoice: boolean;
+  source: SpeakSource;
   /** Present when playback was not possible. */
-  reason?: 'no-tts' | 'no-voices' | 'empty-text' | 'interrupted';
+  reason?: 'no-tts' | 'no-voices' | 'empty-text' | 'playback-failed';
+}
+
+let currentAudio: HTMLAudioElement | null = null;
+let pendingSpeakTimer: number | null = null;
+let speechWatchdog: number | null = null;
+
+function clearPendingSpeak(): void {
+  if (pendingSpeakTimer !== null && typeof window !== 'undefined') {
+    window.clearTimeout(pendingSpeakTimer);
+    pendingSpeakTimer = null;
+  }
+}
+
+function clearWatchdog(): void {
+  if (speechWatchdog !== null && typeof window !== 'undefined') {
+    window.clearTimeout(speechWatchdog);
+    speechWatchdog = null;
+  }
+}
+
+function stopCurrentAudio(): void {
+  if (!currentAudio) return;
+  try {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+  } catch {
+    /* already stopped or not seekable yet */
+  }
+  currentAudio.onplaying = null;
+  currentAudio.onended = null;
+  currentAudio.onerror = null;
+  currentAudio = null;
+}
+
+/** Stop any recorded audio, pending speech or recognition-safe cleanup. */
+export function stopSpeaking(): void {
+  clearPendingSpeak();
+  clearWatchdog();
+  stopCurrentAudio();
+  getSynthesis()?.cancel();
 }
 
 /**
- * Speak a line. Kannada text is only handed to a Kannada voice; if the browser
- * has no Kannada voice we still speak the transliteration with the default
- * voice (clearly reported) rather than silently mangling Kannada script.
+ * Play the bundled Kannada MP3 for `text`. Returns `null` when HTMLAudioElement
+ * cannot even be constructed here, so the caller can fall through to browser
+ * TTS instead of failing silently.
  */
-export function speak(text: string, options: SpeakOptions = {}): SpeakResult {
-  const { preferKannada = true, rate = 0.85, onStart, onEnd, onError } = options;
-  const trimmed = text.trim();
-  if (!trimmed) return { started: false, voiceName: null, usedKannadaVoice: false, reason: 'empty-text' };
+function playRecordedAudio(url: string, text: string, options: SpeakOptions): SpeakResult | null {
+  if (typeof Audio === 'undefined') return null;
 
+  stopCurrentAudio();
+  clearPendingSpeak();
+  clearWatchdog();
+
+  let audio: HTMLAudioElement;
+  try {
+    audio = new Audio(url);
+  } catch {
+    return null;
+  }
+  audio.preload = 'auto';
+
+  let settled = false;
+  const finish = (fn?: () => void) => {
+    if (settled) return;
+    settled = true;
+    stopCurrentAudio();
+    fn?.();
+  };
+
+  const fallbackToBrowser = () => {
+    if (settled) return;
+    // Mark first: HTMLMediaElement can fire both `error` and a rejected play()
+    // promise for the same failure.
+    settled = true;
+    stopCurrentAudio();
+    const fallback = speakWithBrowserTts(text, options);
+    if (!fallback.started) {
+      options.onError?.('Recorded audio could not play and this browser has no speech engine. Read the transliteration aloud.');
+    }
+  };
+
+  audio.onplaying = () => options.onStart?.();
+  audio.onended = () => finish(() => options.onEnd?.());
+  audio.onerror = fallbackToBrowser;
+
+  currentAudio = audio;
+  try {
+    const playPromise = audio.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(fallbackToBrowser);
+    }
+  } catch {
+    currentAudio = null;
+    return null;
+  }
+
+  return {
+    started: true,
+    voiceName: 'Kannada voice (recorded)',
+    usedKannadaVoice: true,
+    source: 'recording',
+  };
+}
+
+/**
+ * Browser speech synthesis fallback. Improvements over the old implementation:
+ *  - speaks the transliteration when no Kannada voice exists (not raw Kannada
+ *    Unicode handed to an English voice, which is usually silent);
+ *  - defers `speak()` after `cancel()` to avoid Chrome's cancel/speak race;
+ *  - calls `resume()` for browsers that pause the engine after a cancel;
+ *  - watchdogs an engine that never fires `start`/`end`/`error`.
+ */
+function speakWithBrowserTts(text: string, options: SpeakOptions): SpeakResult {
+  const { preferKannada = true, rate = 0.85, fallbackText, onStart, onEnd, onError } = options;
   const synth = getSynthesis();
   if (!synth || typeof SpeechSynthesisUtterance === 'undefined') {
-    return { started: false, voiceName: null, usedKannadaVoice: false, reason: 'no-tts' };
-  }
-  const voices = readVoices();
-  if (!voices.length) {
-    return { started: false, voiceName: null, usedKannadaVoice: false, reason: 'no-voices' };
+    return { started: false, voiceName: null, usedKannadaVoice: false, source: 'browser-tts', reason: 'no-tts' };
   }
 
+  const voices = readVoices();
   const kannadaVoice = preferKannada ? findKannadaVoice(voices) : null;
-  const utterance = new SpeechSynthesisUtterance(trimmed);
+  const textToSpeak = kannadaVoice ? text : (fallbackText?.trim() || text);
+  if (!textToSpeak) {
+    return { started: false, voiceName: null, usedKannadaVoice: false, source: 'browser-tts', reason: 'empty-text' };
+  }
+
+  const utterance = new SpeechSynthesisUtterance(textToSpeak);
   utterance.rate = rate;
   utterance.pitch = 1;
   if (kannadaVoice) {
     utterance.voice = kannadaVoice;
     utterance.lang = kannadaVoice.lang;
+  } else if (fallbackText?.trim()) {
+    utterance.lang = 'en-IN';
   } else {
-    utterance.lang = navigator.languages?.[0] ?? 'en-IN';
+    utterance.lang = 'kn-IN';
   }
 
-  synth.cancel();
+  // Stop anything already playing, then start on the next tick. Chrome reliably
+  // drops a speak() that is called in the same task as cancel().
+  stopSpeaking();
   let finished = false;
-  utterance.onstart = () => onStart?.();
-  utterance.onend = () => {
+  const done = (fn?: () => void) => {
     if (finished) return;
     finished = true;
-    onEnd?.();
+    clearWatchdog();
+    clearPendingSpeak();
+    fn?.();
   };
+
+  utterance.onstart = () => {
+    clearWatchdog();
+    onStart?.();
+  };
+  utterance.onend = () => done(() => onEnd?.());
   utterance.onerror = (event) => {
-    if (finished) return;
-    finished = true;
     const name = (event as SpeechSynthesisErrorEvent).error;
     // "interrupted"/"canceled" happen on every rapid re-click; they are not user errors.
     if (name === 'interrupted' || name === 'canceled') {
-      onEnd?.();
+      done(() => onEnd?.());
       return;
     }
-    onError?.(`Playback failed (${name}). Your browser blocked the speech engine.`);
+    done(() => onError?.(`Playback failed (${name}). Your browser blocked the speech engine.`));
   };
 
-  try {
-    synth.speak(utterance);
-  } catch {
-    return { started: false, voiceName: null, usedKannadaVoice: false, reason: 'no-tts' };
+  if (typeof window !== 'undefined') {
+    speechWatchdog = window.setTimeout(() => {
+      if (!finished) {
+        finished = true;
+        clearPendingSpeak();
+        onError?.('The speech engine did not start. Check the speaker/volume and try again.');
+      }
+    }, 4000);
   }
 
+  pendingSpeakTimer = typeof window !== 'undefined'
+    ? window.setTimeout(() => {
+        pendingSpeakTimer = null;
+        try {
+          synth.resume();
+          synth.speak(utterance);
+        } catch {
+          done(() => onError?.('The speech engine refused to start. Read the transliteration aloud.'));
+        }
+      }, 0)
+    : null;
+
+  const voiceName = kannadaVoice?.name ?? (fallbackText?.trim() ? 'English fallback voice' : 'browser default voice');
   return {
     started: true,
-    voiceName: kannadaVoice?.name ?? utterance.voice?.name ?? 'browser default voice',
+    voiceName,
     usedKannadaVoice: Boolean(kannadaVoice),
+    source: 'browser-tts',
   };
 }
 
-export function stopSpeaking(): void {
-  getSynthesis()?.cancel();
+/**
+ * Speak a line. Prefers the bundled Kannada recording; only text that is not in
+ * the dataset reaches browser speech synthesis.
+ */
+export function speak(text: string, options: SpeakOptions = {}): SpeakResult {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return { started: false, voiceName: null, usedKannadaVoice: false, source: 'browser-tts', reason: 'empty-text' };
+  }
+
+  const url = pronunciationAudioUrl(trimmed);
+  if (url) {
+    const recorded = playRecordedAudio(url, trimmed, options);
+    if (recorded) return recorded;
+  }
+  return speakWithBrowserTts(trimmed, options);
 }
 
 export type ListenErrorCode =

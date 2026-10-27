@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { detectCapabilities, listenOnce, pronunciationAssessmentSupported, speak, stopSpeaking } from '../speech';
+import { hasPronunciationAudio } from '../pronunciationAudio';
+import { phrases } from '../../data/phrases';
+import { curatedQuestions } from '../../data/quiz';
 
 /**
  * jsdom implements neither speechSynthesis nor SpeechRecognition, which is
@@ -21,7 +24,13 @@ describe('capability detection in an unsupported browser', () => {
 });
 
 describe('speak()', () => {
-  it('refuses politely instead of throwing', () => {
+  it('refuses politely instead of throwing when neither recordings nor TTS can play', () => {
+    // Simulate a browser where HTMLAudioElement exists but refuses to play.
+    // speechSynthesis is absent in jsdom, so the final reason must be no-tts.
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(() => {
+      throw new Error('Not implemented: HTMLMediaElement.prototype.play');
+    });
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined);
     const result = speak('ನಮಸ್ಕಾರ');
     expect(result.started).toBe(false);
     expect(result.reason).toBe('no-tts');
@@ -34,6 +43,36 @@ describe('speak()', () => {
 
   it('stopSpeaking is safe to call at any time', () => {
     expect(() => stopSpeaking()).not.toThrow();
+  });
+});
+
+describe('bundled Kannada recordings', () => {
+  it('has a recording for every phrase in the dataset', () => {
+    expect(phrases.length).toBeGreaterThan(100);
+    for (const phrase of phrases) {
+      expect(hasPronunciationAudio(phrase.kannada)).toBe(true);
+    }
+  });
+
+  it('has a recording for every curated listening-question answer', () => {
+    const listening = curatedQuestions.filter((q) => q.type === 'listen');
+    expect(listening.length).toBeGreaterThan(0);
+    for (const question of listening) {
+      expect(hasPronunciationAudio(question.options[question.answerIndex])).toBe(true);
+    }
+  });
+
+  it('prefers the recorded Kannada MP3 over browser speech synthesis', () => {
+    const play = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    const pause = vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined);
+    const result = speak('ನಮಸ್ಕಾರ');
+
+    expect(result.started).toBe(true);
+    expect(result.source).toBe('recording');
+    expect(result.usedKannadaVoice).toBe(true);
+    expect(play).toHaveBeenCalledTimes(1);
+    expect(() => stopSpeaking()).not.toThrow();
+    expect(pause).toHaveBeenCalled();
   });
 });
 

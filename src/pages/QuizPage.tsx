@@ -17,6 +17,7 @@ import type { MatchPair, QuizQuestion } from '../types';
 import { useProgress } from '../hooks/useProgress';
 import { useSpeech } from '../hooks/useSpeech';
 import { speak } from '../services/speech';
+import { hasPronunciationAudio } from '../services/pronunciationAudio';
 import { PhraseCard } from '../components/PhraseCard';
 import { Card, Chip, Meter, SectionHeading, StatusLine } from '../components/ui';
 import { cn } from '../utils/cn';
@@ -161,7 +162,6 @@ export function QuizPage() {
   const progress = useProgress();
   const { capabilities } = useSpeech();
   const [heardAnswer, setHeardAnswer] = useState(false);
-  const canPlayAudio = capabilities.ttsSupported && capabilities.anyVoiceAvailable;
   const [size, setSize] = useState(10);
   const [seed, setSeed] = useState(() => Date.now());
   const [phase, setPhase] = useState<Phase>('intro');
@@ -173,6 +173,10 @@ export function QuizPage() {
 
   const attempt = useMemo(() => buildAttempt(seed, size), [seed, size]);
   const question: QuizQuestion | undefined = attempt.questions[index];
+  const listenOption = question?.type === 'listen' ? question.options[question.answerIndex] : '';
+  const canPlayListen =
+    hasPronunciationAudio(listenOption) ||
+    (capabilities.ttsSupported && capabilities.anyVoiceAvailable);
 
   const score = useMemo(() => {
     const mcq = answers.filter((answer) => answer.correct).length;
@@ -324,11 +328,11 @@ export function QuizPage() {
               <button
                 type="button"
                 className="btn-primary !py-1.5 !text-xs"
-                disabled={!canPlayAudio || heardAnswer}
+                disabled={!canPlayListen || heardAnswer}
                 onClick={() => {
                   // The audio source is the correct option itself: the learner
                   // must recognise it, not read it.
-                  speak(question.options[question.answerIndex], { rate: 0.8 });
+                  speak(listenOption, { rate: 0.8 });
                   setHeardAnswer(true);
                 }}
               >
@@ -336,9 +340,9 @@ export function QuizPage() {
                 {heardAnswer ? 'Play again' : 'Play the line'}
               </button>
               <span className="text-[11px] text-ink-400">
-                {canPlayAudio
+                {canPlayListen
                   ? 'Listen once, then pick what you heard.'
-                  : 'No speech voice is installed here, so read the Kannada options instead — the listening skill is the same.'}
+                  : 'Audio is unavailable here, so read the options instead — the listening skill is the same.'}
               </span>
             </div>
           ) : null}

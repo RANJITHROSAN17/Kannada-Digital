@@ -30,9 +30,10 @@ describe('<PhraseCard />', () => {
     renderCard();
     expect(screen.getByRole('button', { name: /save to favourites/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /copy phrase/i })).toBeInTheDocument();
-    // jsdom has no speech voices: the play button must say so and be disabled.
-    expect(screen.getByRole('button', { name: /audio not supported|playback unavailable/i })).toBeDisabled();
-    expect(screen.getByText(/Audio not supported here/i)).toBeInTheDocument();
+    // A recorded MP3 is bundled, so playback no longer depends on a system
+    // Kannada voice. The button stays available even in jsdom.
+    expect(screen.getByRole('button', { name: /play pronunciation/i })).toBeEnabled();
+    expect(screen.queryByText(/Audio not supported here/i)).not.toBeInTheDocument();
   });
 
   it('saves and removes a favourite, and the write reaches localStorage', () => {

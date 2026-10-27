@@ -14,7 +14,7 @@
 This was **already a strong, working submission** — not a scaffold. At the reviewed commit
 (`70b2037`, "Add my local project files") the repository contained 65 files: a complete React/TypeScript
 app, **111 curated phrases** across **8 situations**, **6 branching conversation scenes**, culture notes,
-a quiz, voice practice, favourites, an offline assistant, an error boundary, **80 automated tests**, six
+a quiz, voice practice, favourites, an offline assistant, an error boundary, **83 automated tests**, six
 captured screenshots, a 13-slide `.pptx`, a deck generator, a project summary, a presentation outline and
 a demo script. Typecheck, tests and the production build all passed before I changed anything.
 
@@ -24,7 +24,7 @@ judge's laptop, on a college LAN, or with no internet. Those were real, and are 
 | | Before review | After review |
 |---|---|---|
 | Kannada rendering on a machine without a Kannada font | ❌ tofu boxes (external Google Fonts only) | ✅ bundled Noto Sans Kannada, verified loaded |
-| Runtime network requests | 1+ (fonts.googleapis.com / gstatic) | **0** — both fonts bundled |
+| External third-party requests | 1+ (fonts.googleapis.com / gstatic) | **0** — fonts and Kannada audio are bundled locally; audio is same-origin and precached |
 | Offline-first claim vs. reality | ⚠️ data bundled, but no service worker or manifest | ✅ PWA manifest + cache-first service worker |
 | Deploy portability | ⚠️ `base: '/'`, Pages required `VITE_BASE_PATH` from repo name | ✅ `base: './'` — one `dist/` works anywhere |
 | Heading structure | ⚠️ 7 of 10 routes had no `<h1>` | ✅ exactly one `<h1>` per route |
@@ -98,10 +98,11 @@ No dataset phrase, quiz rule, speech behaviour, route or test assertion was chan
 
 ```text
 npm run typecheck  → 0 errors (strict, noUnusedLocals, noUnusedParameters)
-npm test           → 80 passed, 7 files, ~7.5 s, no React Router warnings
-npm run build      → dist/assets/index-*.js   390.98 kB │ gzip 118.65 kB
+npm test           → 83 passed, 7 files, ~7 s, no React Router warnings
+npm run build      → dist/assets/index-*.js   413.93 kB │ gzip 123.78 kB
                      dist/assets/index-*.css   37.11 kB │ gzip   7.31 kB
                      dist/assets/*.woff2        89 KB + 48 KB
+                     dist/audio/*.mp3          290 files, 4.9 MB (precached offline)
 npm audit          → 0 vulnerabilities (all)
 npm audit --omit=dev → 0 vulnerabilities (runtime tree)
 
@@ -110,6 +111,11 @@ Headless Chromium 156 (1280×900 and 390×844), 10 routes:
   - bundled fonts: Saathi Kannada:loaded, Inter:loaded; document.fonts.check() === true
   - header tagline computed font-family includes 'Saathi Kannada'
   - zero external requests; 0 console / page / request errors
+  - SPEAKER ICON: every phrase-card / home / practice / conversation / quiz speaker
+    fetches a same-origin /audio/kn-*.mp3 (HTTP 200), plays it (currentTime > 0,
+    paused=false, no media error) and shows "Playing recorded Kannada pronunciation"
+  - OFFLINE AUDIO: service worker precaches 298 URLs; with the browser offline,
+    a page reload still renders and the speaker plays the cached MP3
   - offline assistant: "How much does this cost?" returns the price phrase, mode label
     "Offline · no API key"
   - phrasebook search "fever" filters the real dataset
@@ -131,7 +137,7 @@ above from a fresh clone.
 | Relevance | Explicitly targets problem statement #3, with #2 voice support; README maps features to real-life moments. |
 | Working prototype | Two commands to run; no keys, backend or account; verified in a real browser. |
 | Innovation | Moment-based organisation, offline retrieval assistant, `tone: risky` coaching in conversations, explicit native-review flags on data. |
-| Technical quality | Strict TypeScript, layered services/hooks/utils, 80 tests including dataset integrity, CI, PWA, error boundary. |
+| Technical quality | Strict TypeScript, layered services/hooks/utils, 83 tests including dataset integrity, CI, PWA, error boundary. |
 | Impact | 111 everyday phrases, 8 situations, 6 scenes; works on a low-cost Android phone offline. |
 | Documentation | README, PROJECT-SUMMARY, REVIEW, SUBMISSION, DEMO-SCRIPT, PRESENTATION-OUTLINE, PPTX, 12 screenshots. |
 
@@ -197,8 +203,8 @@ upgrade, so I did a clean reinstall with patched majors.
 npm audit                 → found 0 vulnerabilities
 npm audit --omit=dev      → found 0 vulnerabilities
 npm run typecheck         → 0 errors
-npm test                  → 80 passed, 7 files (Vitest 4.1.12)
-npm run build             → 390.98 kB JS (118.65 kB gzip), 37.11 kB CSS, fonts bundled
+npm test                  → 83 passed, 7 files (Vitest 4.1.12)
+npm run build             → 413.93 kB JS (123.78 kB gzip), 37.11 kB CSS, fonts bundled
 Chromium 1280 px + 390 px → 10 routes, all interaction flows, 0 console/page/request errors
 CI + Pages deploy         → both green on the upgraded lockfile
 ```
@@ -207,3 +213,37 @@ CI + Pages deploy         → both green on the upgraded lockfile
 alerts** — all 17 are marked `fixed` (timestamped 2026-10-27T19:18:47Z+). CI and the Pages deploy both
 completed successfully on the upgraded lockfile. The push-time banner GitHub printed ("found 17
 vulnerabilities") was the stale graph snapshot from before the push; the API reflects the new state.
+
+---
+
+## 9. Speaker icon fix — real Kannada pronunciation (28 October 2026)
+
+**Symptom reported by the user.** Clicking the orange speaker icon on a phrase card produced no sound in the
+complete application.
+
+**Root cause.** `speak()` handed raw Kannada Unicode to `window.speechSynthesis`. Most desktop/Linux browsers
+ship no `kn-IN` voice; Chrome then either selects an English voice that cannot pronounce Kannada script or stays
+silent. The code also called `cancel()` and `speak()` in the same task (a known Chrome race), and the UI disabled
+the button whenever `getVoices()` was empty — which is common before `voiceschanged` fires.
+
+**Fix applied.**
+
+- Generated **290 MP3 recordings** with Microsoft Edge's `kn-IN-SapnaNeural` Kannada neural voice and bundled
+  them in `public/audio/` (4.9 MB total). `src/data/pronunciation-audio.json` maps every speakable line — all
+  111 phrases, every conversation line, quiz listening answers and category titles — to its file.
+- `src/services/pronunciationAudio.ts` resolves a deployment-safe relative URL (`./audio/...`), so GitHub Pages
+  sub-paths work with `base: './'` + HashRouter.
+- `src/services/speech.ts` now prefers the recording. Browser TTS is only a fallback, and when it must be used
+  it speaks the **transliteration** (not Kannada script) with an English voice, defers `speak()` after
+  `cancel()`, calls `resume()`, and watchdogs an engine that never starts.
+- `useSpeech`, `PhraseCard`, `HomePage`, `VoicePracticePage`, `QuizPage` and `ConversationsPage` were updated so
+  playback controls are enabled by bundled audio and status messages say exactly what played.
+- Fixed the service worker while testing: it now precaches hashed JS/CSS/fonts **and** audio via generated
+  `asset-precache.js` / `audio-precache.js`, ignores `Vary: Origin` for same-origin static assets, and only
+  falls back to `index.html` for navigations (previously it returned HTML for missing JS, breaking offline).
+
+**Verification.** Real Chromium: speaker click → `/audio/kn-0164.mp3` HTTP 200, `paused=false`,
+`currentTime=0.78s`, `readyState=4`, `error=null`, status line "Playing recorded Kannada pronunciation". Same
+result on Home, Practice and Conversation speaker buttons; 0 console/page/request errors. With the browser
+**offline** after one visit, the service worker served 298 cached URLs and the speaker still played. Full gate:
+typecheck 0 errors, **83 tests passed**, build clean, `npm audit` 0 vulnerabilities.

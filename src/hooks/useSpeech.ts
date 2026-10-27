@@ -42,6 +42,9 @@ export function useSpeech() {
   const speakPhrase = useCallback(
     (phrase: Phrase) => {
       const result = speak(phrase.kannada, {
+        // If browser TTS is the only option, speak the Latin transliteration
+        // rather than handing Kannada Unicode to an English voice.
+        fallbackText: phrase.transliteration,
         onEnd: () => {
           setPlayingId(null);
           setStatus({ kind: 'idle' });
@@ -64,12 +67,13 @@ export function useSpeech() {
         return result;
       }
 
-      setStatus({
-        kind: 'done',
-        message: result.usedKannadaVoice
-          ? `Playing with the Kannada voice: ${result.voiceName}`
-          : `No Kannada voice is installed, so this used ${result.voiceName}. Read the transliteration for the correct sounds.`,
-      });
+      const message =
+        result.source === 'recording'
+          ? 'Playing recorded Kannada pronunciation — works even without a system Kannada voice.'
+          : result.usedKannadaVoice
+            ? `Playing with the Kannada voice: ${result.voiceName}`
+            : `No Kannada voice is installed, so this used ${result.voiceName}. Read the transliteration for the correct sounds.`;
+      setStatus({ kind: 'done', message });
       setPlayingId(phrase.id);
       return result;
     },

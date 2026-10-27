@@ -14,6 +14,7 @@ import { phrases } from '../data/phrases';
 import { categories } from '../data/categories';
 import type { CategoryId, Phrase } from '../types';
 import { useSpeech } from '../hooks/useSpeech';
+import { hasPronunciationAudio, recordedPronunciationCount } from '../services/pronunciationAudio';
 import { useProgress } from '../hooks/useProgress';
 import { similarityScore } from '../utils/text';
 import { Card, Chip, Meter, SectionHeading, StatusLine } from '../components/ui';
@@ -40,6 +41,9 @@ export function VoicePracticePage() {
   const [interim, setInterim] = useState('');
   const [listening, setListening] = useState(false);
   const [attempts, setAttempts] = useState<number[]>([]);
+  const hasTargetRecording = hasPronunciationAudio(target.kannada);
+  const canHearTarget =
+    hasTargetRecording || (capabilities.ttsSupported && capabilities.anyVoiceAvailable);
 
   const pool = useMemo(
     () => (category === 'all' ? practicePool : practicePool.filter((phrase) => phrase.category === category)),
@@ -129,13 +133,15 @@ export function VoicePracticePage() {
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {[
             {
-              ok: capabilities.ttsSupported && capabilities.anyVoiceAvailable,
-              label: 'Text-to-speech playback',
-              detail: capabilities.kannadaVoiceAvailable
-                ? `Kannada voice found: ${capabilities.kannadaVoiceName}`
-                : capabilities.anyVoiceAvailable
-                  ? 'Voices installed, but none for Kannada — playback uses your default voice'
-                  : 'No system voices available',
+              ok: canHearTarget,
+              label: 'Kannada pronunciation audio',
+              detail: hasTargetRecording
+                ? `Bundled Kannada recording (${recordedPronunciationCount()} lines) — plays without a system voice`
+                : capabilities.kannadaVoiceAvailable
+                  ? `Kannada voice found: ${capabilities.kannadaVoiceName}`
+                  : capabilities.anyVoiceAvailable
+                    ? 'No system Kannada voice — browser fallback speaks the transliteration'
+                    : 'No audio available in this browser',
             },
             {
               ok: capabilities.recognitionSupported,
@@ -226,7 +232,7 @@ export function VoicePracticePage() {
               <button
                 type="button"
                 className="btn-primary !py-2"
-                disabled={!capabilities.ttsSupported || !capabilities.anyVoiceAvailable}
+                disabled={!canHearTarget}
                 onClick={() => (playingId === target.id ? stop() : speakPhrase(target))}
               >
                 {playingId === target.id ? <Square className="h-4 w-4" aria-hidden="true" /> : <Volume2 className="h-4 w-4" aria-hidden="true" />}
@@ -243,7 +249,7 @@ export function VoicePracticePage() {
                 {progress.isFavorite(target.id) ? 'Saved' : 'Save this phrase'}
               </button>
             </div>
-            {!capabilities.ttsSupported || !capabilities.anyVoiceAvailable ? (
+            {!canHearTarget ? (
               <p className="mt-2 text-[11px] text-ink-400">
                 Playback is unavailable here, so use the transliteration line as your model.
               </p>

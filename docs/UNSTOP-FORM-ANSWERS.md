@@ -39,7 +39,7 @@ Do **not** choose "Voice of Kannada" (#2); that is only a supporting feature in 
 
 ## 2. Project Title and Description *
 
-### 2A. Recommended — one combined box (982 characters)
+### 2A. Recommended — one combined box (978 characters)
 
 Paste this whole block if the field allows 1,000+ characters:
 
@@ -48,9 +48,9 @@ Kannada Saathi - Offline-First Kannada for Everyday Life
 
 Problem Statement #3 - Kannada in Everyday Life.
 
-Kannada Saathi is an offline-first, installable web app that helps newcomers to Karnataka use Kannada in real situations: buses, markets, pharmacies, clinics, canteens and campuses. It bundles 111 reviewed phrases across 8 situations, each with Kannada script, transliteration, English meaning, usage guidance, cultural notes and browser audio. Six branching conversation simulators coach polite vs risky replies; a quiz, voice practice with a typed fallback, favourites, streaks and an offline "What do I say?" assistant make it usable without a backend, API key or network connection.
+Kannada Saathi is an offline-first, installable web app that helps newcomers to Karnataka use Kannada in real situations: buses, markets, pharmacies, clinics and more. It bundles 111 reviewed phrases across 8 situations, each with Kannada script, transliteration, English meaning, usage guidance, cultural notes and bundled Kannada audio. Six branching conversation simulators coach polite vs risky replies; a quiz, voice practice with a typed fallback, favourites, streaks and an offline "What do I say?" assistant make it usable without a backend, API key or third-party service; it works offline after first load.
 
-Built with React 18, strict TypeScript, Vite 8, Tailwind CSS, Web Speech API and localStorage. Ships as a PWA with bundled Kannada/Latin fonts, zero runtime network requests, 80 passing tests, green CI and 0 npm audit vulnerabilities. Live demo and source are linked in this submission.
+Built with React 18, strict TypeScript, Vite 8, Tailwind CSS, Web Speech API and localStorage. Ships as a PWA with bundled fonts/MP3s, zero third-party/API requests, 83 passing tests, CI and 0 npm audit vulnerabilities. Live demo and repo linked below.
 ```
 
 ### 2B. If the form has separate "Title" and "Description" boxes
@@ -61,24 +61,24 @@ Built with React 18, strict TypeScript, Vite 8, Tailwind CSS, Web Speech API and
 Kannada Saathi - Offline-First Kannada for Everyday Life
 ```
 
-**Description (924 characters):**
+**Description (920 characters):**
 
 ```text
 Problem Statement #3 - Kannada in Everyday Life.
 
-Kannada Saathi is an offline-first, installable web app that helps newcomers to Karnataka use Kannada in real situations: buses, markets, pharmacies, clinics, canteens and campuses. It bundles 111 reviewed phrases across 8 situations, each with Kannada script, transliteration, English meaning, usage guidance, cultural notes and browser audio. Six branching conversation simulators coach polite vs risky replies; a quiz, voice practice with a typed fallback, favourites, streaks and an offline "What do I say?" assistant make it usable without a backend, API key or network connection.
+Kannada Saathi is an offline-first, installable web app that helps newcomers to Karnataka use Kannada in real situations: buses, markets, pharmacies, clinics and more. It bundles 111 reviewed phrases across 8 situations, each with Kannada script, transliteration, English meaning, usage guidance, cultural notes and bundled Kannada audio. Six branching conversation simulators coach polite vs risky replies; a quiz, voice practice with a typed fallback, favourites, streaks and an offline "What do I say?" assistant make it usable without a backend, API key or third-party service; it works offline after first load.
 
-Built with React 18, strict TypeScript, Vite 8, Tailwind CSS, Web Speech API and localStorage. Ships as a PWA with bundled Kannada/Latin fonts, zero runtime network requests, 80 passing tests, green CI and 0 npm audit vulnerabilities. Live demo and source are linked in this submission.
+Built with React 18, strict TypeScript, Vite 8, Tailwind CSS, Web Speech API and localStorage. Ships as a PWA with bundled fonts/MP3s, zero third-party/API requests, 83 passing tests, CI and 0 npm audit vulnerabilities. Live demo and repo linked below.
 ```
 
-### 2C. Emergency short version — 492 characters total
+### 2C. Emergency short version — 494 characters total
 
 Use only if the field caps at 500 characters:
 
 ```text
 Kannada Saathi - Offline-First Kannada for Everyday Life
 
-Problem Statement #3: Kannada in Everyday Life. Kannada Saathi is an offline-first PWA with 111 reviewed phrases across 8 real-life situations, each with Kannada script, transliteration, meaning, audio and cultural notes. It adds 6 role-plays, a quiz, voice practice and an offline "What do I say?" assistant. No backend, API key or network needed. React 18 + TypeScript + Vite; 80 tests, 0 vulnerabilities. Live demo and repo linked.
+Problem Statement #3: Kannada in Everyday Life. Kannada Saathi is an offline-first PWA with 111 reviewed phrases across 8 real-life situations, each with Kannada script, transliteration, meaning, bundled Kannada audio and cultural notes. It adds 6 role-plays, a quiz, voice practice and an offline "What do I say?" assistant. No backend, API key or third-party service needed; works offline after first load. React 18 + TypeScript + Vite; 83 tests, 0 vulnerabilities. Live demo and repo linked.
 ```
 
 ---
@@ -137,7 +137,7 @@ Field says "Remaining characters: 500" and the remark says the link **must be pu
 /home/user/Kannada-Digital-clone/docs/Kannada-Saathi-Demo-Video.mp4
 ```
 
-Details: 4 min 12 sec, 1280x720, H.264 + AAC, 6.3 MB, English neural voice-over, burned-in captions, 13 screenshot/slide segments. Optional subtitle file: `/home/user/Kannada-Digital-clone/docs/Kannada-Saathi-Demo-Video.srt`.
+Details: 4 min 22 sec, 1280x720, H.264 + AAC, 6.5 MB, English neural voice-over, burned-in captions, 13 screenshot/slide segments. Optional subtitle file: `/home/user/Kannada-Digital-clone/docs/Kannada-Saathi-Demo-Video.srt`.
 
 **Exact steps to get the link:**
 
@@ -179,4 +179,4 @@ Before clicking Submit:
 - [ ] Presentation PDF opens and Kannada text is visible, not boxes.
 - [ ] Video link opens in a private window without a Google sign-in.
 - [ ] No secrets, `.env` files, `node_modules/` or `dist/` are in the repo.
-- [ ] `npm test` = 80 passed, `npm audit` = 0 vulnerabilities, CI = green.
+- [ ] `npm test` = 83 passed, `npm audit` = 0 vulnerabilities, CI = green.

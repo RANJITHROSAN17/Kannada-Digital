@@ -3,6 +3,7 @@ import { Bookmark, BookmarkCheck, Check, Copy, Info, Quote, Volume2, VolumeX } f
 import type { Phrase } from '../types';
 import { useProgress } from '../hooks/useProgress';
 import { useSpeech } from '../hooks/useSpeech';
+import { hasPronunciationAudio } from '../services/pronunciationAudio';
 import { Card, Chip, IconButton, StatusLine } from './ui';
 import { highlightChunks } from '../utils/text';
 import { cn } from '../utils/cn';
@@ -67,7 +68,10 @@ export function PhraseCard({ phrase, query, compact = false, footer }: PhraseCar
     }
   };
 
-  const canPlay = capabilities.ttsSupported && capabilities.anyVoiceAvailable;
+  // A bundled MP3 is available for every phrase, so playback no longer depends
+  // on the browser shipping a `kn-IN` speech voice.
+  const hasRecording = hasPronunciationAudio(phrase.kannada);
+  const canPlay = hasRecording || (capabilities.ttsSupported && capabilities.anyVoiceAvailable);
 
   return (
     <Card

@@ -40,7 +40,7 @@ the *tone* that makes it polite rather than blunt.
 are in**, not by vocabulary topic.
 
 1. **Eight situations, 111 reviewed phrases.** Each card = Kannada script + reader transliteration + English
-   meaning + *when to use* + pronunciation tip + audio (where the browser allows) + copy + bookmark.
+   meaning + *when to use* + pronunciation tip + bundled Kannada audio + copy + bookmark.
 2. **"What do I say?"** — describe the problem in English, get ranked Kannada lines from the dataset. Works with
    no network and no API key.
 3. **Voice practice with honest feedback.** Mic input through `SpeechRecognition(kn-IN)`, a typed fallback, and a
@@ -73,7 +73,7 @@ Differentiators judges can see in the demo: **local-first reliability** (nothing
 
 ## 5. How it works (approach)
 
-* Data as typed modules, compiled into the bundle → first paint already has content; zero runtime fetches.
+* Data as typed modules, compiled into the bundle → first paint already has content; zero runtime **data/API** fetches (Kannada audio is a same-origin static asset, precached by the service worker).
 * One reducer-like context (`useProgress`) owns favourites, recent history, practice log, completed scenes and quiz
   best — persisted under a single versioned `localStorage` key with defensive hydration.
 * A capability layer for speech: `detectCapabilities()` + typed failure reasons, so the UI reports what *this*

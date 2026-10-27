@@ -33,11 +33,13 @@ function PlayLine({ text, label }: { text: string; label: string }) {
         onClick={() => {
           const result = speak(text, { rate: 0.82 });
           setNote(
-            result.started
-              ? result.usedKannadaVoice
-                ? `Played with ${result.voiceName}`
-                : `No Kannada voice installed — played with ${result.voiceName}, use the transliteration for exact sounds`
-              : 'This browser cannot play audio. Read the transliteration instead.',
+            !result.started
+              ? 'This browser cannot play audio. Read the transliteration instead.'
+              : result.source === 'recording'
+                ? 'Played recorded Kannada pronunciation'
+                : result.usedKannadaVoice
+                  ? `Played with ${result.voiceName}`
+                  : `No Kannada voice installed — played with ${result.voiceName}, use the transliteration for exact sounds`,
           );
         }}
       >

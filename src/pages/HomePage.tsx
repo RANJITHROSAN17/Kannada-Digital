@@ -10,12 +10,16 @@ import { PhraseCard } from '../components/PhraseCard';
 import { Card, Meter, SectionHeading, ScriptText } from '../components/ui';
 import { useProgress } from '../hooks/useProgress';
 import { useSpeech } from '../hooks/useSpeech';
+import { hasPronunciationAudio } from '../services/pronunciationAudio';
 import { dailyPhrase, summarizeProgress } from '../utils/progress';
 
 export function HomePage() {
   const progress = useProgress();
   const { capabilities, speakPhrase } = useSpeech();
   const today = useMemo(() => dailyPhrase(), []);
+  const canHearToday =
+    hasPronunciationAudio(today.kannada) ||
+    (capabilities.ttsSupported && capabilities.anyVoiceAvailable);
   const summary = useMemo(
     () => summarizeProgress(progress, conversations.length),
     [progress],
@@ -117,11 +121,11 @@ export function HomePage() {
               <button
                 type="button"
                 className="btn-accent !py-2"
-                disabled={!capabilities.ttsSupported || !capabilities.anyVoiceAvailable}
+                disabled={!canHearToday}
                 onClick={() => speakPhrase(today)}
               >
                 <Mic className="h-4 w-4" aria-hidden="true" />
-                {capabilities.kannadaVoiceAvailable ? 'Hear it in Kannada' : 'Hear it (fallback voice)'}
+                Hear it in Kannada
               </button>
               <button
                 type="button"
@@ -136,10 +140,9 @@ export function HomePage() {
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </div>
-            {!capabilities.ttsSupported || !capabilities.anyVoiceAvailable ? (
+            {!canHearToday ? (
               <p className="mt-2 text-[11px] text-ink-400">
-                Audio is disabled because this browser has no speech voice installed. The transliteration is
-                the pronunciation guide.
+                Audio is unavailable in this browser. The transliteration is the pronunciation guide.
               </p>
             ) : null}
           </div>

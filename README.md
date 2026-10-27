@@ -30,8 +30,8 @@ accompanying a relative to a hospital appointment.
 
 **Solution.** Kannada Saathi is organised **by the moment you are in**, not by vocabulary topic. Pick
 *Bus & transport*, *Hospital & pharmacy* or *Buying vegetables*, and you get the exact sentences, in Kannada
-script, with a reader-friendly transliteration, the English meaning, when to use it, audio where the browser can
-provide it, and the cultural note that makes the sentence polite instead of blunt. Then rehearse it in a
+script, with a reader-friendly transliteration, the English meaning, when to use it, **bundled Kannada audio** that
+plays on any browser, and the cultural note that makes the sentence polite instead of blunt. Then rehearse it in a
 branching role-play, and prove it to yourself in a quiz.
 
 **Expected impact.** A learner who spends eight minutes in the app before stepping out can complete a real
@@ -73,18 +73,19 @@ Other commands:
 npm run build        # type-check (tsc --noEmit) + production bundle into dist/
 npm run preview      # serve the built dist/ locally on :4173
 npm run typecheck    # tsc --noEmit only
-npm test             # vitest run  (80 tests, incl. dataset-integrity tests)
+npm test             # vitest run  (83 tests, incl. dataset-integrity tests)
 npm audit            # 0 vulnerabilities (also enforced in CI)
 npm run test:watch   # watch mode
 ```
 
-Verified in this repo after the security upgrade: `npm run typecheck` → 0 errors · `npm test` → **7 files / 80
-tests passed** · `npm run build` → `dist/` 391 kB JS (119 kB gzipped) + 37 kB CSS (7 kB gzipped) + 89 kB Kannada
-font + 48 kB Inter font · `npm audit` → **0 vulnerabilities** · real Chromium at 1280 px and 390 px with **0
-console / page / request errors**, a full quiz
-round reaching the result screen, favourites surviving a reload, the offline assistant returning the right phrase,
-voice typed scoring, and `document.fonts.check(...)` confirming both bundled faces load. All 12 screenshots in
-`docs/screenshots/` were recaptured from this build.
+Verified in this repo after the speaker-audio fix: `npm run typecheck` → 0 errors · `npm test` → **7 files / 83
+tests passed** · `npm run build` → `dist/` 414 kB JS (124 kB gzipped) + 37 kB CSS (7 kB gzipped) + 89 kB Kannada
+font + 48 kB Inter font + **290 Kannada MP3s (4.9 MB, precached offline)** · `npm audit` → **0 vulnerabilities** ·
+real Chromium at 1280 px and 390 px with **0 console / page / request errors**, every speaker button fetching and
+playing its bundled MP3 (including with the browser offline), a full quiz round reaching the result screen,
+favourites surviving a reload, the offline assistant returning the right phrase, voice typed scoring, and
+`document.fonts.check(...)` confirming both bundled faces load. All 12 screenshots in `docs/screenshots/` were
+recaptured from this build.
 
 ### Deploy it (for the "live URL" deliverable)
 
@@ -104,6 +105,7 @@ A ready-made workflow lives in [`.github/workflows/deploy.yml`](.github/workflow
 | Fix | Why it matters for a live demo |
 | --- | --- |
 | Bundled `Noto Sans Kannada` + `Inter` woff2 locally (`src/assets/`), removed the Google Fonts `<link>` and added `Saathi Kannada` to both Tailwind font stacks | Kannada rendered as empty boxes on Linux/container machines with no system Kannada font, and the external request broke offline use. Now verified: `document.fonts.check()` is `true`, zero external requests. |
+| Bundled **290 Kannada pronunciation MP3s** in `public/audio/`, generated with a `kn-IN` neural voice, plus `src/data/pronunciation-audio.json` and offline precache lists | The speaker icon was silent on machines with no system `kn-IN` TTS voice. Every phrase, conversation line and quiz listening answer now plays a real recording, even offline. Browser speech synthesis is only a fallback. |
 | Added `public/manifest.webmanifest` + `public/sw.js` (registered in production only) | The README claimed "offline-first"; there was no service worker. The app shell is now cached and installable. |
 | Default `base: './'` in `vite.config.ts` + `HashRouter` | One `dist/` works at a domain root, a GitHub Pages sub-path, Netlify, or a plain folder — no `VITE_BASE_PATH` juggling. |
 | `SectionHeading` gained a `level` prop; each route now has exactly one `<h1>` | Screen readers and heading navigation previously started at `<h2>` on 7 of 10 routes. |
@@ -119,8 +121,8 @@ remaining recommendations and the full Dependabot remediation log.
 
 | Feature | Route | What actually works |
 | --- | --- | --- |
-| **A. Situation-based assistant** | `/situations`, `/situations/:id` | 8 situations, **111 phrases**, each with Kannada script · transliteration · English meaning · "when to use" · pronunciation tip · play · copy · bookmark. |
-| **B. Voice & pronunciation practice** | `/practice` | Capability dashboard that reports the truth for this browser; mic via `SpeechRecognition` (`kn-IN`); typed fallback; text-similarity match; per-phrase practice log. |
+| **A. Situation-based assistant** | `/situations`, `/situations/:id` | 8 situations, **111 phrases**, each with Kannada script · transliteration · English meaning · "when to use" · pronunciation tip · **bundled Kannada audio** · copy · bookmark. |
+| **B. Voice & pronunciation practice** | `/practice` | Capability dashboard that reports the truth for this browser; **"Hear the target" plays a real Kannada recording**; mic via `SpeechRecognition` (`kn-IN`); typed fallback; text-similarity match; per-phrase practice log. |
 | **C. Conversation simulator** | `/conversations`, `/conversations/:id` | 6 branching role-plays (bus conductor, vegetable market, tea shop, clinic, auto ride, hotel check-in). Every reply carries a coaching note, `risky` options are explained rather than failed, alternatives are offered, and free text resolves against the real dataset. |
 | **D. Searchable phrasebook** | `/phrasebook`, `/favorites` | Ranked search over script + transliteration + meaning + keywords, situation filter, favourites-only filter, sort modes, recently-viewed, favourites persisted in `localStorage`. |
 | **E. Learning & quiz** | `/quiz` | 12 curated judgement questions + generator that builds meaning questions from the dataset; 4 types (`en→kn`, `kn→en`, scenario, listening); a pair-matching round; immediate feedback; best score kept, every attempt counted; missed phrases re-appear as review cards. |
@@ -271,11 +273,12 @@ src/
 npm test
 ```
 
-7 files / 80 tests: text normalisation, Levenshtein and similarity edges, search ranking + filters + favourites,
+7 files / 83 tests: text normalisation, Levenshtein and similarity edges, search ranking + filters + favourites,
 storage hydration and persistence, streak maths, best-score-vs-attempts behaviour, speech degradation in an
 unsupported browser, `<PhraseCard>` behaviour (bookmark writes through to `localStorage`, tip disclosure, review
-badge), and page behaviour for situations, phrasebook search, favourites after an unmount/remount, a full
-conversation playthrough and quiz feedback — plus the dataset integrity suite described above.
+badge), bundled-recording coverage for every phrase and quiz listening answer, and page behaviour for situations,
+phrasebook search, favourites after an unmount/remount, a full conversation playthrough and quiz feedback — plus
+the dataset integrity suite described above.
 
 ---
 
@@ -303,8 +306,9 @@ conversation playthrough and quiz feedback — plus the dataset integrity suite 
 ## 11. Stack
 
 React 18 · TypeScript 5.6 (strict) · Vite 8.3.5 · Tailwind CSS 3 · lucide-react · react-router-dom 7.18.4
-(HashRouter) · Vitest 4.1.12 + Testing Library + jsdom. No state library, no CSS-in-JS, no backend, no runtime
-data fetch. `npm audit` reports 0 vulnerabilities in both development and production dependency trees.
+(HashRouter) · Vitest 4.1.12 + Testing Library + jsdom. No state library, no CSS-in-JS, no backend, no third-party
+API or runtime data fetch (Kannada audio is a same-origin static asset, precached offline). `npm audit` reports 0
+vulnerabilities in both development and production dependency trees.
 
 ## 12. Licence & credit
 

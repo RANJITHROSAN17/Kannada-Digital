@@ -259,7 +259,7 @@ def build():
         _, c = card(slide, left, Inches(5.0), Inches(2.93), Inches(1.55), fill=WHITE, line_color=RGBColor(0xD9, 0xE0, 0xF2))
         set_text(c, big, size=34, color=SAFFRON_DARK, bold=True, align=PP_ALIGN.CENTER, space_after=2)
         add_paragraph(c, small, size=13, color=INK_SOFT, align=PP_ALIGN.CENTER, space_after=0)
-    footer(slide, "React 18 · TypeScript strict · Vite · Tailwind · Web Speech APIs · localStorage · 80 passing tests", 1)
+    footer(slide, "React 18 · TypeScript strict · Vite 8 · Tailwind · 290 bundled Kannada recordings · 83 passing tests", 1)
 
     # -- 2. problem statement ------------------------------------------------ #
     slide = add_slide(prs)
@@ -322,8 +322,8 @@ def build():
     slide = add_slide(prs)
     title(slide, "The solution", "Kannada Saathi: organised by the moment you are in")
     items = [
-        ("A · Situations", f"{n['situations']} situation cards → {n['phrases']} reviewed phrases. Script + transliteration + meaning + when-to-use + audio + copy + bookmark."),
-        ("B · Voice practice", "kn-IN recognition where supported, typed fallback, capability dashboard that states what the browser can do. Text-similarity feedback — never a fake accent score."),
+        ("A · Situations", f"{n['situations']} situation cards → {n['phrases']} reviewed phrases. Script + transliteration + meaning + when-to-use + bundled Kannada audio + copy + bookmark."),
+        ("B · Voice practice", "Bundled Kannada recording for every target, kn-IN recognition where supported, typed fallback, capability dashboard. Text-similarity feedback — never a fake accent score."),
         ("C · Role-play", f"{n['scenes']} branching scenes. The other person replies; every choice gets a coaching note; risky-but-understood replies are explained, not failed."),
         ("D · Phrasebook", "Ranked search across all four fields, situation filter, sort modes, recently viewed; favourites persist on-device and export as .txt from /favorites."),
         ("E · Quiz", "12 curated judgement questions + a generator over the same data, 4 question types, matching round, best score kept, misses returned as review cards."),
@@ -346,9 +346,9 @@ def build():
     title(slide, "How this is different", "Four decisions nobody else in this category is making")
     diffs = [
         ("Situation-first, not word-first", "Content is indexed by the pressure you are under, so retrieval at a counter takes one tap instead of a dictionary search."),
-        ("Honest capability reporting", "The app tells you when your browser has no Kannada voice or no recognition, and hands you the typed fallback. It refuses to display a pronunciation score it cannot compute."),
+        ("Honest capability reporting", "The app plays a real bundled Kannada recording even when the browser has no kn-IN voice, reports recognition gaps honestly, and refuses to display a pronunciation score it cannot compute."),
         ("Role-play that explains", "A polite-but-wrong reply is answered and annotated, because that is what happens in real speech — the lesson is in the tone, not the vocabulary."),
-        ("Local-first, reviewable data", "No backend, no key, no runtime fetch. Every phrase carries a review status, so a native speaker can audit and fix the dataset in one file."),
+        ("Local-first, reviewable data", "No backend, no key, no third-party/API fetch (audio is bundled). Every phrase carries a review status, so a native speaker can audit and fix the dataset in one file."),
     ]
     for index, (head, body) in enumerate(diffs):
         left = Inches(0.7 + (index % 2) * 6.1)
@@ -442,18 +442,18 @@ def build():
         slide.shapes.add_picture(str(path), Inches(box_l + (cell_w - w) / 2), Inches(box_t), Inches(w), Inches(h))
         _, cap = textbox(slide, Inches(box_l), Inches(box_t + cell_h + 0.06), Inches(cell_w), Inches(0.32))
         set_text(cap, caption, size=11.5, color=INK_SOFT, space_after=0, line=1.05)
-    footer(slide, "Same build the judges get: npm install && npm run dev \u2192 localhost:5173 \u00b7 tsc and 80 tests green on this commit.", 9)
+    footer(slide, "Same build the judges get: npm install && npm run dev \u2192 localhost:5173 \u00b7 tsc and 83 tests green on this commit.", 9)
 
     # -- 10. tech stack + architecture diagram -------------------------------- #
     slide = add_slide(prs)
     title(slide, "Tech stack & architecture", "Local-first: 100 % static, optional proxy")
     stack = [
-        ("Frontend", "React 18 · TypeScript 5.6 strict · Vite 5 · Tailwind CSS 3 · lucide-react"),
-        ("Routing", "react-router-dom 6 with HashRouter → zero rewrite rules on any static host, deep links survive refresh"),
+        ("Frontend", "React 18 · TypeScript 5.6 strict · Vite 8.3.5 · Tailwind CSS 3 · lucide-react"),
+        ("Routing", "react-router-dom 7.18.4 with HashRouter → zero rewrite rules on any static host, deep links survive refresh"),
         ("State & storage", "one React context + localStorage key kannada-saathi:progress:v1 (versioned, defensive hydration)"),
-        ("Speech", "Web Speech APIs: speechSynthesis + SpeechRecognition(kn-IN), behind a capability detector with typed failures"),
+        ("Speech", "290 bundled Kannada MP3s (kn-IN neural voice) + Web Speech APIs as fallback, behind a capability detector with typed failures"),
         ("Data", f"src/data: {n['phrases']} phrases · {n['situations']} categories · {n['scenes']} conversations · culture notes · quiz generator"),
-        ("Quality", "Vitest + Testing Library + jsdom: 7 files / 80 tests, including dataset-integrity tests; CI gates the Pages deploy"),
+        ("Quality", "Vitest 4 + Testing Library + jsdom: 7 files / 83 tests, including dataset-integrity and audio-coverage tests; CI gates the Pages deploy"),
     ]
     for index, (head, body) in enumerate(stack):
         top = Inches(2.05 + index * 0.63)
@@ -485,7 +485,7 @@ def build():
     node(Inches(4.72), "hooks/useProgress  ·  hooks/useSpeech", "actions + capability snapshot")
     arrow(Inches(5.36))
     node(Inches(5.62), "services/storage → localStorage", "favourites, recent, practice, scenes, best score", fill=CREAM, line=SAFFRON)
-    node(Inches(6.26), "Web Speech API (browser)  ·  data/phrases.ts etc.  ·  optional VITE_AI_PROXY_URL",
+    node(Inches(6.26), "290 bundled MP3s  ·  Web Speech API fallback  ·  data/phrases.ts etc.  ·  optional VITE_AI_PROXY_URL",
          None, fill=INK, color=WHITE, line=INK)
 
     footer(slide, "Data flow: typed data compiled in → components call context actions → storage persists one versioned key → speech/assistant layers degrade visibly.", 10)
@@ -505,9 +505,9 @@ def build():
     table(slide, Inches(0.7), Inches(2.2), Inches(11.9), rows, col_ratios=[3.4, 8.5], size=12.5)
     _, test = textbox(slide, Inches(0.7), Inches(6.05), Inches(11.9), Inches(0.7))
     set_text(test, [("Automated guards: ", {"bold": True, "color": SAFFRON_DARK}),
-                    ("7 files / 80 tests — dataset shape, script purity (no other Indic or CJK glyphs inside a Kannada field), conversation graph reachability, quiz answer validity, deterministic seeded rounds, storage hydration, search ranking, component behaviour, favourites after remount.", {})],
+                    ("7 files / 83 tests — dataset shape, script purity (no other Indic or CJK glyphs inside a Kannada field), conversation graph reachability, quiz answer validity, deterministic seeded rounds, storage hydration, search ranking, component behaviour, bundled-audio coverage, favourites after remount.", {})],
                size=13, color=INK, space_after=0)
-    footer(slide, "Known limits stated in the README: desktop Kannada TTS is rare; recognition is network-backed; clipboard/mic need a secure context; 111 phrases is a starter set, not a dictionary.", 11)
+    footer(slide, "Known limits stated in the README: recognition is network-backed; clipboard/mic need a secure context; 111 phrases is a starter set, not a dictionary. Playback no longer needs a system TTS voice.", 11)
 
     # -- 11. impact & limitations -------------------------------------------- #
     slide = add_slide(prs)
@@ -525,7 +525,7 @@ def build():
     _, right = textbox(slide, Inches(6.9), Inches(2.1), Inches(5.7), Inches(0.4))
     set_text(right, "Known limitations (documented, not hidden)", size=16, color=ROSE, bold=True, space_after=0)
     bullets(slide, Inches(6.9), Inches(2.55), Inches(5.7), Inches(3.6), [
-        ("Browser voice gaps", "no kn-IN TTS on most desktops; recognition is Chrome/network-backed — fallbacks cover both"),
+        ("Browser voice gaps", "recognition is Chrome/network-backed; bundled recordings remove the need for a system kn-IN TTS voice"),
         ("No acoustic scoring", "by design, until a reliable model exists"),
         ("Coverage", f"{n['phrases']} phrases is a starter set, not a dictionary; needs a native review pass"),
         ("Secure context", "plain http on a LAN IP disables mic and clipboard; the app detects and says so"),

@@ -1,4 +1,4 @@
-# Two-minute demo script
+# 3–5 minute demo script
 
 Read-aloud timing is marked. Rehearse twice with the app on `npm run dev` in a **fresh profile** (so progress starts
 at zero — the zeros are part of the story). Have Chrome open; on Android/Chrome you get mic recognition, on desktop
@@ -25,8 +25,8 @@ Click **Situations → Hospital & pharmacy**.
 
 Press the **speaker** button on any card. Then open **Pronunciation tip**.
 
-> "If the browser has no Kannada voice, the app says so instead of pretending — you can see it reporting its own
-> limits right here."
+> "That is a real Kannada recording bundled with the app — not a browser voice that may not exist. It plays on
+> any laptop or phone, and it is precached, so it still works with the Wi-Fi off."
 
 ### 0:40–1:00 — "What do I say?" (the assistant, offline)
 
@@ -68,7 +68,7 @@ immediate feedback → show *Best score* and *Attempts*.
 
 > "Favourites persist on device with no account and no server. The quiz draws its questions from the same reviewed
 > data, keeps your best score while counting every attempt, and hands your misses back as review cards.
-> React, TypeScript, Vite, Tailwind, Web Speech, localStorage — 80 tests pass, including tests on the dataset
+> React, TypeScript, Vite, Tailwind, Web Speech, localStorage — 83 tests pass, including tests on the dataset
 > itself: script purity, every conversation branch reachable, every answer index valid.
 > Repo and live URL are in the submission. ಧನ್ಯವಾದಗಳು — thank you."
 
