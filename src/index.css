@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-ivory-100 text-ink-800 antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04';
+  }
+
+  /* Kannada script needs a little more leading than Latin text. */
+  .knn {
+    @apply font-kannada;
+    line-height: 1.85;
+    font-size: 1.05em;
+  }
+
+  *:focus-visible {
+    @apply outline-none ring-2 ring-saffron-500 ring-offset-2 ring-offset-ivory-100;
+  }
+
+  ::selection {
+    @apply bg-saffron-200 text-ink-900;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-ink-100/70 bg-white shadow-card;
+  }
+
+  .btn {
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition
+           active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-ink-800 text-ivory-50 shadow-card hover:bg-ink-700;
+  }
+  .btn-accent {
+    @apply btn bg-saffron-500 text-white shadow-card hover:bg-saffron-600;
+  }
+  .btn-ghost {
+    @apply btn border border-ink-100 bg-white/70 text-ink-600 hover:bg-white hover:text-ink-800;
+  }
+  .btn-soft {
+    @apply btn bg-ivory-200 text-ink-700 hover:bg-ivory-300;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium;
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-ink-100 bg-white px-3.5 py-2.5 text-sm text-ink-800 shadow-sm
+           placeholder:text-ink-400/70 focus:border-saffron-400;
+  }
+
+  .label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-400;
+  }
+
+  .link {
+    @apply font-semibold text-ink-600 underline decoration-saffron-400 decoration-2 underline-offset-4 hover:text-ink-800;
+  }
+
+  /* Respect users who ask for reduced motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+/* Thin scrollbars inside scrollable panels (transcript, phrase lists). */
+.scroll-slim {
+  scrollbar-width: thin;
+  scrollbar-color: theme('colors.ink.100') transparent;
+}
+.scroll-slim::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-slim::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-ink-100;
+}

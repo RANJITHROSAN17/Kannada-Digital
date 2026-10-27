@@ -1,0 +1,41 @@
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { AppShell } from './components/Layout';
+import { ProgressProvider } from './hooks/useProgress';
+import { HomePage } from './pages/HomePage';
+import { SituationDetailPage, SituationsPage } from './pages/SituationsPage';
+import { VoicePracticePage } from './pages/VoicePracticePage';
+import { ConversationDetailPage, ConversationsPage } from './pages/ConversationsPage';
+import { PhrasebookPage } from './pages/PhrasebookPage';
+import { QuizPage } from './pages/QuizPage';
+import { FavoritesPage } from './pages/FavoritesPage';
+import { CulturePage } from './pages/CulturePage';
+
+/**
+ * HashRouter is a deliberate choice for a hackathon deliverable: the same
+ * `dist/` folder can be dropped on GitHub Pages, Netlify or a college LAN
+ * server with zero rewrite rules, and a deep link like
+ * `#/situations/health` still works on refresh.
+ */
+export default function App() {
+  return (
+    <ProgressProvider>
+      <HashRouter>
+        <AppShell>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/situations" element={<SituationsPage />} />
+            <Route path="/situations/:categoryId" element={<SituationDetailPage />} />
+            <Route path="/practice" element={<VoicePracticePage />} />
+            <Route path="/conversations" element={<ConversationsPage />} />
+            <Route path="/conversations/:scenarioId" element={<ConversationDetailPage />} />
+            <Route path="/phrasebook" element={<PhrasebookPage />} />
+            <Route path="/quiz" element={<QuizPage />} />
+            <Route path="/favorites" element={<FavoritesPage />} />
+            <Route path="/culture" element={<CulturePage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AppShell>
+      </HashRouter>
+    </ProgressProvider>
+  );
+}
