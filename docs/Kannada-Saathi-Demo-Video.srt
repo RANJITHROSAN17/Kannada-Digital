@@ -1,0 +1,51 @@
+1
+00:00:00,000 --> 00:00:20,384
+Welcome to Kannada Saathi, an offline-first communication companion built for problem statement three, Kannada in Everyday Life, at the Kannada Digital Innovation Hackathon 2026. In the next three minutes I will show you a working product you can use right away.
+
+2
+00:00:20,384 --> 00:00:44,464
+Imagine arriving at Mysuru bus stand at six in the morning. You can read English, but you cannot say anything useful in Kannada. Public life here runs on spoken Kannada, so the cost is a missed stop, an overpaid fare, or a wrong dosage time. Kannada Saathi is built for exactly that moment.
+
+3
+00:00:44,464 --> 00:01:04,080
+The app is organised by the moment you are in, not by vocabulary topic. One hundred and eleven reviewed phrases across eight everyday situations: bus and transport, hospital and pharmacy, buying vegetables, the canteen, the campus and more.
+
+4
+00:01:04,080 --> 00:01:23,528
+Every phrase card gives you the Kannada script, a reader-friendly transliteration, the English meaning, when to use it, a pronunciation tip and browser audio. The phrasebook is searchable across script, transliteration and meaning, with situation filters.
+
+5
+00:01:23,528 --> 00:01:44,608
+The What do I say assistant needs no API key and no network. Describe your problem in English, and it retrieves the Kannada line you actually need, ranked from the same verified dataset. This is retrieval over curated data, not a model guessing sentences.
+
+6
+00:01:44,608 --> 00:02:02,448
+Learning a phrase is not the hard part; surviving the reply is. Six branching conversation simulators let you rehearse a bus conductor, a vegetable vendor, a tea shop, a clinic, an auto ride and a hotel check-in.
+
+7
+00:02:02,448 --> 00:02:18,608
+Each option comes with a coaching note that explains why it works, or what it signals. A risky reply is explained rather than simply marked wrong, so the conversation itself teaches tone and register.
+
+8
+00:02:18,608 --> 00:02:36,856
+Voice practice uses the browser speech recognition API where available, and a typed fallback where it is not. The capability dashboard reports the truth, and the score is text similarity, not a fake pronunciation percentage.
+
+9
+00:02:36,856 --> 00:02:50,208
+The quiz draws questions from the same reviewed phrases, gives immediate feedback, keeps your best score, counts every attempt, and hands your misses back as review cards.
+
+10
+00:02:50,208 --> 00:03:05,168
+Favourites and progress persist on the device with versioned local storage. No account, no server, no database. Refresh the page and your saved phrases are still there.
+
+11
+00:03:05,168 --> 00:03:23,704
+Kannada Saathi is a responsive, installable progressive web app. Bundled Noto Sans Kannada and Inter fonts mean the script renders correctly even offline on a phone with no system Kannada font, and the service worker caches the app shell.
+
+12
+00:03:23,704 --> 00:03:41,856
+Cultural notes explain politeness and register. One hundred and seven phrases are marked verified usage, and four are visibly badged as needing native review. The app states its own limits instead of inventing dialects.
+
+13
+00:03:41,856 --> 00:04:05,072
+Built with React eighteen, strict TypeScript, Vite eight, Tailwind CSS and the Web Speech API. Eighty tests pass in CI, and npm audit reports zero vulnerabilities. The public GitHub repository and the live deployment are linked in the submission. Thank you.
