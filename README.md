@@ -1,66 +1,273 @@
-# Kannada Digital
+# Kannada Saathi — ಕನ್ನಡ ಸಾಥಿ
 
-A self-contained source snapshot of the **`mcp_doctor`** engine from
-[Vexar-MCP](https://github.com/RANJITHROSAN17/Vexar-MCP): the static analyzer,
-security scanner, schema validator and token-budget auditor for Model Context
-Protocol (MCP) servers and AI agent tools.
+> **Speak Kannada. Navigate Karnataka with confidence.**
+>
+> An offline-first, mobile-first communication companion for non-Kannada speakers in Karnataka — built for the
+> **Kannada Digital Innovation Hackathon 2026** (HackerRank Campus Crew · NIE Mysuru).
+>
+> **Problem statement chosen: #3 — Kannada in Everyday Life** (with #2 *Voice of Kannada* as a supporting capability).
 
-This repository contains the complete `src/` tree plus everything needed to run
-the test suite locally. GitHub Actions bot workflows are intentionally **not**
-included — only the two roadmap-bot data files required by `tests/test_roadmap_bot.py`.
+---
 
-> Snapshot includes the `MCP009` hardcoded-secret detector from
-> [PR #37](https://github.com/RANJITHROSAN17/Vexar-MCP/pull/37) (open at the time
-> of this snapshot), so `src/` is slightly ahead of Vexar-MCP `main`.
+## 1. The problem, the users, the solution
 
-## Layout
+**Problem.** People who arrive in Karnataka for a job, a college seat, a hospital visit or a holiday can usually
+read English but cannot *say* anything useful in Kannada. Word-for-word translators give them nouns; what they
+actually need is a sentence, its sound, and the social tone that makes it land. Public signage, bus conductors,
+market vendors, pharmacy counters and government offices all run on spoken Kannada.
 
-| Path | Contents |
-|---|---|
-| `src/mcp_doctor/` | Full package: CLI, engine, AST/TS/JSON loaders, 11 registered rules, reporters, token estimator |
-| `tests/` | 142 unit/integration tests, including TS fixtures |
-| `examples/` | `clean_server.py` (100/100 A+), `vulnerable_server.py`, `tools_manifest.json` |
-| `pyproject.toml` | Editable-install metadata, dev extras, ruff/mypy/pytest configuration |
-| `.github/scripts/sync_roadmap_issues.py`, `.github/roadmap.json` | Required by `tests/test_roadmap_bot.py`; no workflows shipped |
-| `LICENSE` | MIT (Ranjith Rosan) |
+**Who is affected.** First-year students in Mysuru/Manipal/Bengaluru, transferred professionals, nurses and
+paramedics, domestic workers, shop owners serving new customers, tourists at Hampi/Coorg/Gokarna, and anyone
+accompanying a relative to a hospital appointment.
 
-## Quick start
+**Solution.** Kannada Saathi is organised **by the moment you are in**, not by vocabulary topic. Pick
+*Bus & transport*, *Hospital & pharmacy* or *Buying vegetables*, and you get the exact sentences, in Kannada
+script, with a reader-friendly transliteration, the English meaning, when to use it, audio where the browser can
+provide it, and the cultural note that makes the sentence polite instead of blunt. Then rehearse it in a
+branching role-play, and prove it to yourself in a quiz.
+
+**Expected impact.** A learner who spends eight minutes in the app before stepping out can complete a real
+transaction — ask a price, board a bus, confirm a dosage — without switching to English or waving a phone. The
+starter set is reviewable and growable, so a native speaker can improve the app without touching code.
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/home.png" alt="Home screen" width="330"><br><sub>Home · progress, streak, phrase of the day</sub></td>
+    <td><img src="docs/screenshots/situations.png" alt="Situations" width="330"><br><sub>Situations · 8 cards with per-card progress</sub></td>
+    <td><img src="docs/screenshots/scene-bus.png" alt="Role-play scene" width="330"><br><sub>Role-play · reply, coaching note, alternatives</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/quiz-result.png" alt="Quiz result" width="330"><br><sub>Quiz · score, best kept, misses as review cards</sub></td>
+    <td><img src="docs/screenshots/practice.png" alt="Voice practice" width="330"><br><sub>Voice practice · capability report + typed fallback</sub></td>
+    <td><img src="docs/screenshots/mobile.png" alt="Mobile layout" width="200"><br><sub>390 px · bottom tab bar</sub></td>
+  </tr>
+</table>
+
+---
+
+## 2. Run it
+
+Requires **Node 18+**. No backend, no API key, no account.
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate            # Windows: .venv\Scripts\activate
-python -m pip install -e ".[dev]"
-python -m mcp_doctor scan examples/clean_server.py
-python -m mcp_doctor scan examples/vulnerable_server.py --format json --fail-on never
+npm install          # once
+npm run dev          # http://localhost:5173  (dev server, HMR)
 ```
 
-## Quality gate
+Other commands:
 
 ```bash
-ruff check .
-ruff format --check .
-mypy src
-pytest --cov=mcp_doctor --cov-report=term-missing --cov-fail-under=85
-python .github/scripts/sync_roadmap_issues.py --dry-run
+npm run build        # type-check (tsc --noEmit) + production bundle into dist/
+npm run preview      # serve the built dist/ locally on :4173
+npm run typecheck    # tsc --noEmit only
+npm test             # vitest run  (80 tests, incl. dataset-integrity tests)
+npm run test:watch   # watch mode
 ```
 
-Verified on the initial commit: **142 passed**, **92.48 % coverage**,
-`ruff`/`mypy` clean, and `examples/clean_server.py` scoring **100/100 (A+)**.
+Verified in this repo: `npm run typecheck` → 0 errors · `npm test` → **7 files / 80 tests passed** ·
+`npm run build` → `dist/` 373 kB of JS (115 kB gzipped) + 38 kB of CSS (7 kB gzipped) · checked in real Chromium
+at 1280 px and 390 px with **0 console errors**, including a full quiz round (6 questions + 5-pair matching round)
+writing `quizAttempts` / `bestQuiz` to `localStorage` and surviving a reload.
 
-## Registered rules
+### Deploy it (for the "live URL" deliverable)
 
-`MCP001`–`MCP010` and `MCP013` (11 rules). `MCP009`
-(`hardcoded-secret-in-tool`, `ERROR`, `SECURITY`) flags hardcoded
-`ghp_` / `github_pat_` / `sk-` / `AKIA` / `xoxb-` / `AIza` / `glpat-` keys,
-bearer credentials and sensitive string assignments inside `@mcp.tool()`
-handlers, while ignoring placeholders and environment-variable lookups.
-Diagnostics store only pattern metadata — never the raw secret value.
+The app uses `HashRouter`, so **any static host works with zero rewrite rules** — including a sub-path.
 
-## Notes
+| Host | What to do |
+| --- | --- |
+| **GitHub Pages** | Push, then run the included workflow (*Actions → Deploy to GitHub Pages*). If the site is served from `https://<user>.github.io/<repo>/`, add `VITE_BASE_PATH=/<repo>/` to `.env.local` **or** set the variable in the workflow's env. |
+| **Netlify / Vercel** | Build command `npm run build`, publish directory `dist`. No env vars needed. |
+| **College LAN / any nginx** | `npm run build` and copy `dist/` into the web root. |
 
-- `pyproject.toml` retains the upstream package name `Vexar-MCP` and its
-  `[project.urls]` so the editable install and tooling behave exactly as upstream.
-  Update those fields if you intend to publish this repository under a new name.
-- `src/mcp_doctor/rules/mcp009_protocol.py` is an unregistered scaffold that also
-  claims ID `MCP009`; it is not imported by `rules/__init__.py`, so there is no
-  runtime collision (roadmap item `RM-016` asks for it to be renumbered).
+A ready-made workflow lives in [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
+
+---
+
+## 3. Features (and where each one lives)
+
+| Feature | Route | What actually works |
+| --- | --- | --- |
+| **A. Situation-based assistant** | `/situations`, `/situations/:id` | 8 situations, **111 phrases**, each with Kannada script · transliteration · English meaning · "when to use" · pronunciation tip · play · copy · bookmark. |
+| **B. Voice & pronunciation practice** | `/practice` | Capability dashboard that reports the truth for this browser; mic via `SpeechRecognition` (`kn-IN`); typed fallback; text-similarity match; per-phrase practice log. |
+| **C. Conversation simulator** | `/conversations`, `/conversations/:id` | 6 branching role-plays (bus conductor, vegetable market, tea shop, clinic, auto ride, hotel check-in). Every reply carries a coaching note, `risky` options are explained rather than failed, alternatives are offered, and free text resolves against the real dataset. |
+| **D. Searchable phrasebook** | `/phrasebook`, `/favorites` | Ranked search over script + transliteration + meaning + keywords, situation filter, favourites-only filter, sort modes, recently-viewed, favourites persisted in `localStorage`. |
+| **E. Learning & quiz** | `/quiz` | 12 curated judgement questions + generator that builds meaning questions from the dataset; 4 types (`en→kn`, `kn→en`, scenario, listening); a pair-matching round; immediate feedback; best score kept, every attempt counted; missed phrases re-appear as review cards. |
+| **F. Regional & cultural context** | `/culture`, inside each situation | 10 cultural notes, a regional-variant table where **every row is explicitly labelled as awaiting native review**, numbers/digits reference, and a public statement of the dataset's review status. |
+| **"What do I say?" assistant** | home, situations | Ask in English, get ranked Kannada lines. Runs entirely offline against the bundled data. |
+
+### Deliberate non-claims
+
+* No "pronunciation accuracy %" — there is no reliable Kannada acoustic model in the browser, so the app reports
+  **text similarity** and says that in the UI and in the code (`pronunciationAssessmentSupported()` returns `false`).
+* No fake streaks or seeded stats. Every number on the progress card is derived from recorded interactions
+  (`src/utils/progress.ts`), and a brand-new user legitimately sees zeros.
+* No invented dialects. Regional variants are marked `needs-native-review` and rendered with a warning chip.
+* No dead buttons, placeholder pages or lorem text: unknown routes redirect home, and unknown situation/scene ids
+  render an explicit "does not exist" state with a way back.
+
+---
+
+## 4. Architecture
+
+```
+                        ┌──────────────────────────────────────────────┐
+                        │          React 18 + TypeScript (Vite)        │
+                        │                                              │
+  user ──► HashRouter ──►  Pages  (Home · Situations · Practice ·      │
+                        │            Conversations · Phrasebook ·      │
+                        │            Quiz · Favorites · Culture)       │
+                        │                 │                            │
+                        │                 ▼                            │
+                        │   Components  PhraseCard · ScenarioCard ·    │
+                        │               AskWhatToSayBox · ui.tsx ·     │
+                        │               Layout (nav, mobile tabs)      │
+                        │                 │                            │
+                        │     ┌───────────┴────────────┐              │
+                        │     ▼                          ▼              │
+                        │  hooks/useProgress      hooks/useSpeech      │
+                        │  (context + actions)    (capabilities,       │
+                        │     │                    play / listen)      │
+                        │     ▼                          │              │
+                        │  services/storage.ts           │              │
+                        │  (versioned localStorage,      │              │
+                        │   streaks, best-score rules)   │              │
+                        │                                ▼              │
+                        │            Web Speech API (browser only)     │
+                        │            speechSynthesis · SpeechRecognition
+                        │                                               │
+                        │  services/assistant.ts ── offline retrieval   │
+                        │        │  (utils/search.ts over the dataset)  │
+                        │        └─ optional: VITE_AI_PROXY_URL ──► your proxy
+                        │                                               │
+                        │  DATA (bundled, typed, tested)                │
+                        │  data/phrases.ts · categories.ts ·            │
+                        │        conversations.ts · culture.ts · quiz.ts│
+                        └──────────────────────────────────────────────┘
+```
+
+**Data flow, in words.** The datasets are typed modules compiled into the bundle, so the first paint already has
+content. UI components never mutate state directly: they call actions on `useProgress()`, which produces a new
+`ProgressState`, and `services/storage.ts` writes it to a single versioned key
+(`kannada-saathi:progress:v1`) — that is what makes favourites survive a refresh. Voice features read a capability
+snapshot from `detectCapabilities()` and every code path returns a typed reason instead of throwing when the API is
+missing. Search, the assistant and the practice comparison share one normalisation layer (`utils/text.ts`) so
+transliteration quirks (`nildāṇa` vs `nildana`) do not break matching.
+
+**Optional AI, isolated.** `services/assistant.ts` works offline by default. If — and only if — you set
+`VITE_AI_PROXY_URL` to *your own* proxy, the same question is POSTed there and the reply is appended under a
+"verify with a native speaker" warning; any proxy failure degrades to the offline answer with a visible note. No
+provider key ever lives in the frontend, because `VITE_*` is inlined into shipped JS.
+
+---
+
+## 5. Project layout
+
+```
+src/
+  components/   Layout.tsx · PhraseCard.tsx · ScenarioCard.tsx ·
+                AskWhatToSayBox.tsx · ui.tsx · ErrorBoundary.tsx
+  pages/        HomePage · SituationsPage · VoicePracticePage · ConversationsPage ·
+                PhrasebookPage · QuizPage · FavoritesPage · CulturePage
+  data/         phrases.ts (111) · categories.ts (8) · conversations.ts (6 scenes) ·
+                culture.ts (10 notes + regional variants) · quiz.ts (12 curated + generator)
+  services/     speech.ts · storage.ts · assistant.ts
+  hooks/        useProgress.tsx · useSpeech.ts
+  utils/        search.ts · text.ts · progress.ts · cn.ts
+  types/        index.ts (Phrase, Category, ConversationScenario, QuizQuestion,
+                ProgressState, CulturalNote, RegionalVariant, …)
+  test/setup.ts
+```
+
+---
+
+## 6. Dataset & review workflow (read this before trusting a phrase)
+
+* **111 phrases** across 8 situations, written in standard everyday Kannada and short enough to be produced by a
+  beginner under pressure. Request forms use the polite imperatives ಕೊಡಿ / ಮಾಡಿ / ಹೇಳಿ / ತೋರಿಸಿ; questions use
+  ಎಷ್ಟು / ಎಲ್ಲಿದೆ / ಯಾವಾಗ / ಏನು.
+* **107 are `verified-usage`** — safe, standard lines. **4 are `needs-native-review`** — colloquial or code-mixed
+  lines people really say (e.g. writing "ಬಾಕಿ ಉಳಿಸಿ", "ಈ ರೋಡು ಎಲ್ಲಿಗೆ ಸೇರುತ್ತದೆ?"), kept because learners hear
+  them, and badged in the UI so nobody mistakes them for the universal form.
+* Transliteration is **reader-friendly, not academic**: no IAST diacritics, because the goal is to be understood at
+  a counter, not to publish a grammar.
+* The five dataset tests in `src/data/__tests__/dataset.test.ts` enforce structure: unique ids, ≥10 phrases per
+  situation, Kannada script present, **no other Indic or CJK script mixed into a Kannada field**, lowercase
+  keywords, every conversation edge resolving to a real node or `end`, quiz answer indices valid, generated quiz
+  free of duplicate phrases and deterministic per seed. That is what catches the "LLM quietly produced a Telugu
+  vowel sign" class of bug.
+* **Known limitation:** this is a reviewed starter set, not a dictionary, and it was not produced by a Kannada
+  medium textbook. Before public release it should be read through by a native speaker. `npm test` will tell you
+  the moment an edit breaks the shape of the data. To fix a line, edit `src/data/phrases.ts` — no other file needs
+  to change, and the phrase's id (used by favourites) stays the same.
+
+---
+
+## 7. Accessibility & responsiveness
+
+* Kannada is marked `lang="kn"` with a dedicated font stack (`Noto Sans Kannada` → `Tunga` → `Nirmala UI` → OS
+  Kannada fallbacks), so script renders even with no network and no webfont.
+* Skip link, visible focus rings, `role="search"`, `aria-pressed` on toggles, `aria-live` status regions for
+  playback/recognition/quiz feedback, labelled form controls, keyboard-operable nav, and
+  `prefers-reduced-motion` respected.
+* Contrast: ink-800 on ivory (≈14:1), saffron-600/700 on ivory for accents; audio buttons carry text for the
+  unsupported case instead of an icon alone.
+* Layouts verified at 390 px (bottom tab bar) and 1280 px (full nav).
+
+---
+
+## 8. Known limitations (honest list)
+
+1. **Kannada TTS is rare on desktop.** Chrome/Edge usually have no `kn-IN` voice, so playback falls back to the
+   default voice and the UI states that the transliteration is the reliable guide. On Android, Google TTS often
+   *does* have Kannada — the app detects and uses it.
+2. **Speech recognition is browser-dependent and network-backed** in Chrome's implementation. Permission denial,
+   `no-speech`, `audio-capture` and `network` errors each get their own message, and the typed path always works.
+3. **No acoustic scoring** — text similarity only, labelled as such.
+4. **Clipboard and mic need a secure context.** Opening the built app over plain `http://192.168.x.x` disables
+   both; the app detects it (`secureContext`) and says so.
+5. **111 phrases is a starter set**, not full coverage; the assistant can only answer from what is bundled (it
+   says "nothing matches that yet" rather than inventing a line).
+6. `needs-native-review` items and the regional table are **claims to verify**, not teaching material.
+
+---
+
+## 9. Tests
+
+```
+npm test
+```
+
+7 files / 80 tests: text normalisation, Levenshtein and similarity edges, search ranking + filters + favourites,
+storage hydration and persistence, streak maths, best-score-vs-attempts behaviour, speech degradation in an
+unsupported browser, `<PhraseCard>` behaviour (bookmark writes through to `localStorage`, tip disclosure, review
+badge), and page behaviour for situations, phrasebook search, favourites after an unmount/remount, a full
+conversation playthrough and quiz feedback — plus the dataset integrity suite described above.
+
+---
+
+## 10. Hackathon submission pack in this repo
+
+| Deliverable | Where |
+| --- | --- |
+| Working app + source | this repo; `npm run dev` / `dist/` |
+| README (setup, features, architecture, stack, limitations) | this file |
+| Problem · users · solution · impact | §1 above + [`docs/PROJECT-SUMMARY.md`](docs/PROJECT-SUMMARY.md) |
+| Presentation (PPTX, 13 slides, all six required sections) | [`docs/Kannada-Saathi-Hackathon-Presentation.pptx`](docs/Kannada-Saathi-Hackathon-Presentation.pptx) |
+| Deck generator (rebuilds the PPTX; counts + slide text read live from `src/data`) | `python3 scripts/make_deck.py` — needs `pip install python-pptx` |
+| Screenshots used by the deck and this README | [`docs/screenshots/`](docs/screenshots) (captured in Chromium at 1280 px and 390 px) |
+| Presentation outline (if you prefer to build your own deck) | [`docs/PRESENTATION-OUTLINE.md`](docs/PRESENTATION-OUTLINE.md) |
+| 2-minute live demo script + 3–5 minute video walkthrough script | [`docs/DEMO-SCRIPT.md`](docs/DEMO-SCRIPT.md) |
+| Environment template | [`.env.example`](.env.example) (optional — the app needs nothing) |
+
+---
+
+## 11. Stack
+
+React 18 · TypeScript 5.6 (strict) · Vite 5 · Tailwind CSS 3 · lucide-react · react-router-dom 6 (HashRouter) ·
+Vitest 2 + Testing Library + jsdom. No state library, no CSS-in-JS, no backend, no runtime data fetch.
+
+## 12. Licence & credit
+
+Built as an individual hackathon entry. Phrase data is curated for everyday usability and should be reviewed by a
+native speaker before redistribution as a reference. Emergency numbers cited in the app (112 all-India emergency,
+108 ambulance in Karnataka) should be confirmed against current local services before use.

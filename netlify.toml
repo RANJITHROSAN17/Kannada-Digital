@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# The app uses HashRouter, so no redirect rule is needed for deep links.
+# This catch-all is here only in case you switch to BrowserRouter later.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
