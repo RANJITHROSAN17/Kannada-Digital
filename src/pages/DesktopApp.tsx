@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
+  ArrowLeftRight,
   Home,
   Compass,
   Mic,
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { to: '/quiz', label: 'Quiz', icon: Brain },
   { to: '/favorites', label: 'Favorites', icon: Star },
   { to: '/culture', label: 'Culture', icon: Landmark },
+  { to: '/interpreter', label: 'Interpreter', icon: ArrowLeftRight },
 ];
 
 /**

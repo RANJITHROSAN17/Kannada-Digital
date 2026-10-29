@@ -150,7 +150,7 @@ async function translateWithGoogle(
 ): Promise<string> {
   const query = new URLSearchParams({
     client: 'gtx',
-    sl: source,
+    sl: source === 'auto' ? 'auto' : source,
     tl: target,
     dt: 't',
     q: text,
@@ -340,7 +340,10 @@ export async function translateText(
   const source = sourceLang.trim().toLowerCase();
   const target = targetLang.trim().toLowerCase();
 
-  if (source === target) {
+  // Google Translate supports sl=auto for automatic source language detection.
+  const resolvedSource = source === 'auto' ? 'auto' : source;
+
+  if (resolvedSource === target) {
     return { text: clean, engine: 'identity' };
   }
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
+  ArrowLeftRight,
   BookOpen,
   Brain,
   Compass,
@@ -33,6 +34,7 @@ export const navItems = [
   { to: '/quiz', label: 'Quiz', full: 'Quiz & matching', icon: Brain },
   { to: '/favorites', label: 'Favorites', full: 'My favorites', icon: Star },
   { to: '/culture', label: 'Culture', full: 'Culture & region', icon: Landmark },
+  { to: '/interpreter', label: 'Interpreter', full: 'Voice interpreter', icon: ArrowLeftRight },
 ];
 
 const mobileItems = navItems.filter((item) =>

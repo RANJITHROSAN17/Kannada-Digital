@@ -12,6 +12,7 @@ import { PhrasebookPage } from './pages/PhrasebookPage';
 import { QuizPage } from './pages/QuizPage';
 import { FavoritesPage } from './pages/FavoritesPage';
 import { CulturePage } from './pages/CulturePage';
+import { VoiceInterpreterPage } from './pages/VoiceInterpreterPage';
 
 /**
  * HashRouter is a deliberate choice for a hackathon deliverable: the same
@@ -37,6 +38,7 @@ function renderRoutes() {
       <Route path="/quiz" element={<QuizPage />} />
       <Route path="/favorites" element={<FavoritesPage />} />
       <Route path="/culture" element={<CulturePage />} />
+      <Route path="/interpreter" element={<VoiceInterpreterPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

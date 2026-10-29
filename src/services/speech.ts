@@ -15,6 +15,7 @@
 import { pronunciationAudioUrl } from './pronunciationAudio';
 import { isDesktop, desktopRecognize, desktopSpeak } from './desktop';
 import { hasKannadaScript } from '../utils/text';
+import { speechCodeToWhisper, needsWhisperTranslate } from './languages';
 
 export interface SpeechCapabilities {
   /** Text-to-speech engine exists at all. */
@@ -139,6 +140,8 @@ export interface SpeakOptions {
   rate?: number;
   /** Latin-script text to speak when the browser has no Kannada voice. */
   fallbackText?: string;
+  /** Target language code (e.g. 'kn', 'en', 'hi'). When set, finds a matching voice. */
+  lang?: string;
   onStart?: () => void;
   onEnd?: () => void;
   onError?: (message: string) => void;
@@ -266,15 +269,20 @@ function playRecordedAudio(url: string, text: string, options: SpeakOptions): Sp
  *  - watchdogs an engine that never fires `start`/`end`/`error`.
  */
 function speakWithBrowserTts(text: string, options: SpeakOptions): SpeakResult {
-  const { preferKannada = true, rate = 0.85, fallbackText, onStart, onEnd, onError } = options;
+  const { preferKannada = true, rate = 0.85, fallbackText, lang, onStart, onEnd, onError } = options;
   const synth = getSynthesis();
   if (!synth || typeof SpeechSynthesisUtterance === 'undefined') {
     return { started: false, voiceName: null, usedKannadaVoice: false, source: 'browser-tts', reason: 'no-tts' };
   }
 
   const voices = readVoices();
+  // If a target lang is specified, find a matching voice first.
+  const targetVoice = lang
+    ? voices.find((v) => (v.lang ?? '').toLowerCase().startsWith(lang.toLowerCase()))
+    : null;
   const kannadaVoice = preferKannada ? findKannadaVoice(voices) : null;
-  const textToSpeak = kannadaVoice ? text : (fallbackText?.trim() || text);
+  const chosenVoice = targetVoice ?? kannadaVoice;
+  const textToSpeak = chosenVoice ? text : (fallbackText?.trim() || text);
   if (!textToSpeak) {
     return { started: false, voiceName: null, usedKannadaVoice: false, source: 'browser-tts', reason: 'empty-text' };
   }
@@ -282,9 +290,12 @@ function speakWithBrowserTts(text: string, options: SpeakOptions): SpeakResult {
   const utterance = new SpeechSynthesisUtterance(textToSpeak);
   utterance.rate = rate;
   utterance.pitch = 1;
-  if (kannadaVoice) {
-    utterance.voice = kannadaVoice;
-    utterance.lang = kannadaVoice.lang;
+  if (chosenVoice) {
+    utterance.voice = chosenVoice;
+    utterance.lang = chosenVoice.lang;
+  } else if (lang) {
+    // No matching voice found; set lang hint so the browser picks the closest.
+    utterance.lang = lang.includes('-') ? lang : `${lang}-IN`;
   } else if (fallbackText?.trim()) {
     utterance.lang = 'en-IN';
   } else {
@@ -404,6 +415,63 @@ export function speak(text: string, options: SpeakOptions = {}): SpeakResult {
   return speakWithBrowserTts(trimmed, options);
 }
 
+/**
+ * Speak text in a specific target language. Unlike `speak()` (which is
+ * Kannada-first), this picks the right voice for any language:
+ *  - Desktop: espeak-ng handles many languages natively.
+ *  - Web: finds a browser voice whose lang matches the target.
+ */
+export function speakInLanguage(
+  text: string,
+  langCode: string,
+  options: SpeakOptions = {},
+): SpeakResult {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return { started: false, voiceName: null, usedKannadaVoice: false, source: 'browser-tts', reason: 'empty-text' };
+  }
+
+  // Desktop mode: espeak-ng supports any language code it has data for.
+  if (isDesktop()) {
+    stopCurrentAudio();
+    clearPendingSpeak();
+    clearWatchdog();
+    desktopSpeak(trimmed, langCode)
+      .then((audio) => {
+        if (currentAudio) return;
+        const audioEl = new Audio(`data:audio/wav;base64,${audio}`);
+        audioEl.onplaying = () => options.onStart?.();
+        audioEl.onended = () => {
+          if (currentAudio === audioEl) currentAudio = null;
+          options.onEnd?.();
+        };
+        audioEl.onerror = () => {
+          if (currentAudio === audioEl) currentAudio = null;
+          options.onError?.('Desktop TTS playback failed.');
+        };
+        currentAudio = audioEl;
+        audioEl.play().catch(() => {
+          if (currentAudio === audioEl) currentAudio = null;
+          options.onError?.('Desktop TTS playback failed.');
+        });
+      })
+      .catch((err: Error) => {
+        options.onError?.(`Desktop TTS failed: ${err.message}`);
+        // Fall back to browser TTS with the target language.
+        speakWithBrowserTts(trimmed, { ...options, lang: langCode });
+      });
+    return {
+      started: true,
+      voiceName: `espeak-ng (${langCode})`,
+      usedKannadaVoice: langCode === 'kn',
+      source: 'desktop-tts',
+    };
+  }
+
+  // Web mode: use browser TTS with a voice matching the target language.
+  return speakWithBrowserTts(trimmed, { ...options, lang: langCode });
+}
+
 export type ListenErrorCode =
   | 'unsupported'
   | 'insecure-context'
@@ -439,10 +507,10 @@ export interface ListenOptions {
 function listenOnceDesktop(options: ListenOptions): ListenHandle {
   const { lang = 'kn-IN', onStart, onFinal, onError, onEnd } = options;
   // Map browser lang codes to whisper codes: 'kn-IN' → 'kn', 'en-US' → 'en'.
-  const whisperLang = lang.startsWith('kn') ? 'kn' : 'en';
-  // Kannada audio is translated to English — whisper reliably confuses
-  // Indic scripts in transcribe mode, but --translate produces clean English.
-  const translate = whisperLang === 'kn';
+  const whisperLang = speechCodeToWhisper(lang);
+  // Indic scripts confuse Whisper in transcribe mode; --translate produces
+  // clean English. Other languages transcribe directly.
+  const translate = needsWhisperTranslate(whisperLang);
 
   let audioCtx: AudioContext | null = null;
   let processor: ScriptProcessorNode | null = null;
