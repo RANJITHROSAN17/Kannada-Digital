@@ -155,17 +155,64 @@ describe('listenOnce() continuous accumulation', () => {
     expect(onFinal.mock.calls[0]?.[0]).toBe('Hello there');
   });
 
-  it('does not restart after an error, and surfaces the friendly message', () => {
+  it('does not restart after a permission error, and surfaces the friendly message', () => {
     const onError = vi.fn();
     listenOnce({ lang: 'en-US', onInterim: vi.fn(), onFinal: vi.fn(), onError });
     const recognition = FakeRecognition.instances[0];
 
-    recognition.emitError('no-speech');
+    recognition.emitError('not-allowed');
     recognition.emitEnd();
 
     expect(onError).toHaveBeenCalledTimes(1);
-    expect(onError.mock.calls[0]?.[0]).toBe('no-speech');
+    expect(onError.mock.calls[0]?.[0]).toBe('not-allowed');
     expect(FakeRecognition.instances).toHaveLength(1);
+  });
+
+  it('retries once on a transient network error', () => {
+    const onError = vi.fn();
+    const onFinal = vi.fn();
+    listenOnce({ lang: 'en-US', onInterim: vi.fn(), onFinal, onError });
+    const first = FakeRecognition.instances[0];
+
+    first.emitError('network');
+    first.emitEnd();
+    expect(FakeRecognition.instances).toHaveLength(2);
+
+    const second = FakeRecognition.instances[1];
+    second.emitResult([{ transcript: 'Hello', isFinal: true }]);
+    vi.advanceTimersByTime(900);
+    expect(onFinal).toHaveBeenCalledTimes(1);
+    expect(onFinal.mock.calls[0]?.[0]).toBe('Hello');
+  });
+
+  it('retries once when nothing was heard (no-speech)', () => {
+    const onError = vi.fn();
+    const onFinal = vi.fn();
+    listenOnce({ lang: 'en-US', onInterim: vi.fn(), onFinal, onError });
+    const first = FakeRecognition.instances[0];
+
+    first.emitError('no-speech');
+    first.emitEnd();
+    expect(FakeRecognition.instances).toHaveLength(2);
+
+    // The retry hears the user.
+    const second = FakeRecognition.instances[1];
+    second.emitResult([{ transcript: 'Hi', isFinal: true }]);
+    vi.advanceTimersByTime(900);
+    expect(onFinal.mock.calls[0]?.[0]).toBe('Hi');
+  });
+
+  it('does not restart twice after repeated transient errors', () => {
+    listenOnce({ lang: 'en-US', onInterim: vi.fn(), onFinal: vi.fn(), onError: vi.fn() });
+    const first = FakeRecognition.instances[0];
+    first.emitError('network');
+    first.emitEnd();
+    expect(FakeRecognition.instances).toHaveLength(2);
+
+    const second = FakeRecognition.instances[1];
+    second.emitError('network');
+    second.emitEnd();
+    expect(FakeRecognition.instances).toHaveLength(2); // no third session
   });
 
   it('speaks with continuous mode, like LiveBridge', () => {

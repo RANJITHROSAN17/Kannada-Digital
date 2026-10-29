@@ -407,7 +407,7 @@ export function listenOnce(options: ListenOptions): ListenHandle {
   let delivered = false;
   let stoppedByUs = false;
   let restarting = false;
-  let hadError = false;
+  let lastError: string | null = null;
   let finalizeTimer: number | null = null;
   let session: SpeechRecognitionLike | null = null;
 
@@ -417,6 +417,9 @@ export function listenOnce(options: ListenOptions): ListenHandle {
       finalizeTimer = null;
     }
   };
+
+  /** Errors that a retry can plausibly fix (transient network drops, a missed first attempt). */
+  const retryableError = (code: string | null) => code === null || code === 'network' || code === 'no-speech';
 
   /** Deliver the recognized sentence and close the turn. */
   const finishTurn = () => {
@@ -470,9 +473,9 @@ export function listenOnce(options: ListenOptions): ListenHandle {
     };
 
     recognition.onerror = (event: any) => {
-      hadError = true;
       const code = String(event?.error ?? 'unknown') as ListenErrorCode;
       if (code === 'aborted' && stoppedByUs) return;
+      lastError = code;
       const friendly: Record<string, string> = {
         'no-speech': 'No speech was detected. Tap the mic and say the whole sentence in one go.',
         'not-allowed': 'Microphone permission was blocked. Allow it in the address bar, or type the phrase.',
@@ -491,9 +494,9 @@ export function listenOnce(options: ListenOptions): ListenHandle {
         finishTurn();
         return;
       }
-      if (!restarting && !hadError) {
-        // Chrome on mobile occasionally ends recognition on its own right
-        // after start. Retry once, silently.
+      // Retry once on transient failures (network drop, nothing heard on the
+      // first attempt). Permission/hardware errors won't fix themselves.
+      if (!restarting && retryableError(lastError)) {
         restarting = true;
         try {
           session = createSession();

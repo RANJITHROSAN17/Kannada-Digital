@@ -96,6 +96,8 @@ export function BridgePanel({
     setAutoFlow,
     transcript,
     copiedKey,
+    micTest,
+    testMicrophone,
     setYourInput,
     setTheirInput,
     setYourError,
@@ -207,7 +209,24 @@ export function BridgePanel({
             Stop listening
           </button>
         ) : null}
+        <button
+          type="button"
+          className="btn-ghost !py-1.5 !text-xs"
+          onClick={testMicrophone}
+          disabled={micTest.status === 'testing'}
+        >
+          <Mic className="h-3.5 w-3.5" aria-hidden="true" />
+          {micTest.status === 'testing' ? 'Testing microphone…' : 'Test microphone'}
+        </button>
       </Card>
+
+      {micTest.status !== 'idle' ? (
+        <StatusLine
+          tone={micTest.status === 'ok' ? 'good' : micTest.status === 'fail' ? 'error' : 'info'}
+        >
+          {micTest.detail}
+        </StatusLine>
+      ) : null}
 
       {/* ------------------------------------------------------------ your turn */}
       <Card className="flex flex-col p-4">

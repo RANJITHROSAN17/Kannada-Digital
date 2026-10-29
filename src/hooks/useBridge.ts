@@ -48,6 +48,11 @@ export interface BridgeTranscriptEntry {
   engine?: TranslationEngine;
 }
 
+export interface MicTestResult {
+  status: 'idle' | 'testing' | 'ok' | 'fail';
+  detail: string;
+}
+
 const initialSide: BridgeSideState = { input: '', interim: '', status: 'idle' };
 
 export interface BridgeHook {
@@ -58,6 +63,9 @@ export interface BridgeHook {
   setAutoFlow: (value: boolean) => void;
   transcript: BridgeTranscriptEntry[];
   copiedKey: string | null;
+  /** Result of the one-tap microphone self-test (diagnostics). */
+  micTest: MicTestResult;
+  testMicrophone: () => void;
   setYourInput: (value: string) => void;
   setTheirInput: (value: string) => void;
   setYourError: (message: string) => void;
@@ -78,6 +86,7 @@ export function useBridge(): BridgeHook {
   const [autoFlow, setAutoFlow] = useState(false);
   const [transcript, setTranscript] = useState<BridgeTranscriptEntry[]>([]);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [micTest, setMicTest] = useState<MicTestResult>({ status: 'idle', detail: '' });
 
   const listenerRef = useRef<{ stop: () => void } | null>(null);
   const autoFlowRef = useRef(false);
@@ -234,8 +243,8 @@ export function useBridge(): BridgeHook {
         setYour((state) => ({ ...state, input: text, interim: '', status: 'idle' }));
         void runYourTranslation(text);
       },
-      onError: (_code, message) => {
-        setYour((state) => ({ ...state, status: 'error', error: message, interim: '' }));
+      onError: (code, message) => {
+        setYour((state) => ({ ...state, status: 'error', error: `${message} (error code: ${code})`, interim: '' }));
       },
     });
   };
@@ -308,8 +317,61 @@ export function useBridge(): BridgeHook {
         setThem((state) => ({ ...state, input: text, interim: '', status: 'idle' }));
         void runTheirTranslation(text);
       },
-      onError: (_code, message) => {
-        setThem((state) => ({ ...state, status: 'error', error: message, interim: '' }));
+      onError: (code, message) => {
+        setThem((state) => ({ ...state, status: 'error', error: `${message} (error code: ${code})`, interim: '' }));
+      },
+    });
+  };
+
+  /* -------------------------------------------------- microphone self-test */
+
+  /**
+   * One-tap diagnostic: runs a real recognition session and reports what
+   * happened — including the raw error code, so a failed microphone can be
+   * told apart from a blocked permission or an unreachable speech service.
+   */
+  const testMicrophone = () => {
+    if (!canMic) {
+      setMicTest({
+        status: 'fail',
+        detail:
+          'This browser cannot listen — speech recognition: ' +
+          `${capabilities.recognitionSupported ? 'present' : 'missing'}, ` +
+          `microphone: ${capabilities.microphoneAvailable ? 'available' : 'missing'}, ` +
+          `https: ${capabilities.secureContext}. Use the typed boxes instead.`,
+      });
+      return;
+    }
+    setMicTest({ status: 'testing', detail: 'Listening — say one word, then pause.' });
+    listenerRef.current?.stop();
+    listenerRef.current = listenOnce({
+      lang: 'en-US',
+      onInterim: (text) =>
+        setMicTest((state) =>
+          state.status === 'testing'
+            ? { status: 'testing', detail: `Heard so far: "${text}" — keep going or pause.` }
+            : state,
+        ),
+      onFinal: (text) => {
+        setMicTest({ status: 'ok', detail: `Heard: "${text}" — your microphone works.` });
+        listenerRef.current = null;
+      },
+      onError: (code, message) => {
+        setMicTest({ status: 'fail', detail: `${message} (error code: ${code})` });
+        listenerRef.current = null;
+      },
+      onEnd: () => {
+        setMicTest((state) =>
+          state.status === 'testing'
+            ? {
+                status: 'fail',
+                detail:
+                  'Recognition ended without hearing anything. Check the microphone ' +
+                  'permission in your browser and try again.',
+              }
+            : state,
+        );
+        listenerRef.current = null;
       },
     });
   };
@@ -322,6 +384,8 @@ export function useBridge(): BridgeHook {
     setAutoFlow,
     transcript,
     copiedKey,
+    micTest,
+    testMicrophone,
     setYourInput,
     setTheirInput,
     setYourError,
