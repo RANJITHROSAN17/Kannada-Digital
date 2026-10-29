@@ -375,9 +375,18 @@ export interface ListenOptions {
 }
 
 /**
- * One-shot dictation. Chrome's implementation sends audio to a network
- * service, so `network` errors are surfaced separately from permission ones —
- * the difference matters for a demo on venue Wi-Fi.
+ * One-shot dictation, LiveBridge-style.
+ *
+ * Recognition runs `continuous` and every interim/final result is accumulated
+ * (older Chrome/Android builds drop earlier words when only the last result is
+ * read, and non-continuous mode auto-stops mid-sentence on mobile). The turn
+ * is finalized once the speaker pauses after a final result, or when the
+ * browser ends the session — one silent restart keeps flaky mobile sessions
+ * alive.
+ *
+ * Chrome's implementation sends audio to a network service, so `network`
+ * errors are surfaced separately from permission ones — the difference
+ * matters for a demo on venue Wi-Fi.
  */
 export function listenOnce(options: ListenOptions): ListenHandle {
   const { lang = 'kn-IN', onStart, onInterim, onFinal, onError, onEnd } = options;
@@ -392,56 +401,118 @@ export function listenOnce(options: ListenOptions): ListenHandle {
     return { stop: () => undefined };
   }
 
-  const recognition = new Recognition();
-  recognition.lang = lang;
-  recognition.continuous = false;
-  recognition.interimResults = true;
-  recognition.maxAlternatives = 3;
-
-  let stoppedByUs = false;
+  // Everything the handlers share, kept outside `createSession` so a restart
+  // starts from the same state instead of a fresh closure.
+  const accumulated = { final: '' };
   let delivered = false;
+  let stoppedByUs = false;
+  let restarting = false;
+  let hadError = false;
+  let finalizeTimer: number | null = null;
+  let session: SpeechRecognitionLike | null = null;
 
-  recognition.onstart = () => onStart?.();
-
-  recognition.onresult = (event: any) => {
-    const results = event?.results;
-    if (!results || !results.length) return;
-    const last = results[results.length - 1];
-    const alternative = last?.[0];
-    const transcript: string = alternative?.transcript ?? '';
-    const confidence: number | null =
-      typeof alternative?.confidence === 'number' ? alternative.confidence : null;
-
-    if (!transcript) return;
-    if (last.isFinal) {
-      delivered = true;
-      onFinal(transcript.trim(), confidence);
-    } else {
-      onInterim?.(transcript.trim());
+  const clearFinalize = () => {
+    if (finalizeTimer !== null && typeof window !== 'undefined') {
+      window.clearTimeout(finalizeTimer);
+      finalizeTimer = null;
     }
   };
 
-  recognition.onerror = (event: any) => {
-    const code = String(event?.error ?? 'unknown') as ListenErrorCode;
-    if (code === 'aborted' && stoppedByUs) return;
-    const friendly: Record<string, string> = {
-      'no-speech': 'No speech was detected. Tap the mic and say the whole sentence in one go.',
-      'not-allowed': 'Microphone permission was blocked. Allow it in the address bar, or type the phrase.',
-      'permission-denied': 'Microphone permission was denied. You can type the phrase instead.',
-      'audio-capture': 'No microphone was found. Type the phrase instead.',
-      network: 'Speech recognition needs the network and could not reach it. Type the phrase instead.',
-      'service-not-allowed': 'The browser blocked its speech service. Type the phrase instead.',
-    };
-    onError?.(code in friendly ? (code as ListenErrorCode) : 'unknown', friendly[code] ?? `Recognition error: ${code}`);
+  /** Deliver the recognized sentence and close the turn. */
+  const finishTurn = () => {
+    if (delivered || !accumulated.final.trim()) return;
+    delivered = true;
+    clearFinalize();
+    const text = accumulated.final.trim();
+    accumulated.final = '';
+    onInterim?.('');
+    onFinal(text, null);
   };
 
-  recognition.onend = () => {
-    if (!delivered && !stoppedByUs) onEnd?.();
-    else onEnd?.();
+  const createSession = (): SpeechRecognitionLike => {
+    const recognition = new Recognition();
+    recognition.lang = lang;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => onStart?.();
+
+    recognition.onresult = (event: any) => {
+      const results = event?.results;
+      if (!results || !results.length) return;
+      let interim = '';
+      let final = '';
+      for (let index = event.resultIndex ?? 0; index < results.length; index += 1) {
+        const result = results[index];
+        const transcript: string = result?.[0]?.transcript ?? '';
+        if (result?.isFinal) final += transcript;
+        else interim += transcript;
+      }
+
+      if (final.trim()) {
+        // Chrome's separate final chunks can carry leading spaces — collapse
+        // them so the sentence reads as one line.
+        accumulated.final = `${accumulated.final} ${final}`.replace(/\s+/g, ' ').trim();
+        // Finalize the turn shortly after the pause, unless more speech
+        // arrives and reschedules it.
+        clearFinalize();
+        finalizeTimer = typeof window !== 'undefined'
+          ? window.setTimeout(() => {
+              finalizeTimer = null;
+              finishTurn();
+            }, 900)
+          : null;
+      }
+
+      // Live caption: everything heard so far, final parts + current words.
+      onInterim?.(`${accumulated.final} ${interim}`.replace(/\s+/g, ' ').trim());
+    };
+
+    recognition.onerror = (event: any) => {
+      hadError = true;
+      const code = String(event?.error ?? 'unknown') as ListenErrorCode;
+      if (code === 'aborted' && stoppedByUs) return;
+      const friendly: Record<string, string> = {
+        'no-speech': 'No speech was detected. Tap the mic and say the whole sentence in one go.',
+        'not-allowed': 'Microphone permission was blocked. Allow it in the address bar, or type the phrase.',
+        'permission-denied': 'Microphone permission was denied. You can type the phrase instead.',
+        'audio-capture': 'No microphone was found. Type the phrase instead.',
+        network: 'Speech recognition needs the network and could not reach it. Type the phrase instead.',
+        'service-not-allowed': 'The browser blocked its speech service. Type the phrase instead.',
+      };
+      onError?.(code in friendly ? (code as ListenErrorCode) : 'unknown', friendly[code] ?? `Recognition error: ${code}`);
+    };
+
+    recognition.onend = () => {
+      if (stoppedByUs || delivered) return;
+      if (accumulated.final.trim()) {
+        // The browser ended the session after the last final result.
+        finishTurn();
+        return;
+      }
+      if (!restarting && !hadError) {
+        // Chrome on mobile occasionally ends recognition on its own right
+        // after start. Retry once, silently.
+        restarting = true;
+        try {
+          session = createSession();
+          session.start();
+          return;
+        } catch {
+          /* fall through to onEnd */
+        }
+      }
+      onEnd?.();
+    };
+
+    return recognition;
   };
 
   try {
-    recognition.start();
+    session = createSession();
+    session.start();
+    onInterim?.('');
   } catch {
     onError?.('unknown', 'Could not start recognition. Type the phrase instead.');
   }
@@ -449,8 +520,10 @@ export function listenOnce(options: ListenOptions): ListenHandle {
   return {
     stop: () => {
       stoppedByUs = true;
+      clearFinalize();
+      if (!delivered && accumulated.final.trim()) finishTurn();
       try {
-        recognition.stop();
+        session?.stop();
       } catch {
         /* already stopped */
       }

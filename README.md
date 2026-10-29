@@ -197,7 +197,7 @@ Deployment notes and the push history live in [`docs/DEPLOY-FIX.md`](docs/DEPLOY
 | **E** | Learning & quiz | `/quiz` | 12 curated judgement questions + a generator over the dataset; 4 types (`en→kn`, `kn→en`, scenario, listening); pair-matching round; immediate feedback; best score kept; misses re-appear as review cards. |
 | **F** | Regional & cultural context | `/culture`, inside each situation | 10 cultural notes, a regional-variant table where **every row is explicitly labelled as awaiting native review**, numbers/digits reference, and a public statement of the dataset's review status. |
 | **G** | "What do I say?" assistant | home, situations | Ask in English, get ranked Kannada lines. Runs offline against the bundled data — and for any sentence the 111-phrase set does not contain (e.g. "what is the project status") offers a **live Kannada translation**, no API key. |
-| **H** | Live bridge (ಸಂವಿಧಾನ) | `/bridge` | Speak English → the app plays the line as Kannada audio so the other person hears it in their language; their Kannada reply comes back translated and spoken in English. Typed boxes keep the whole bridge usable without a mic, and every new sentence translates live (Google → MyMemory, no API key). |
+| **H** | Live bridge (ಸಂವಿಧಾನ) | home + `/bridge` | Speak English → the app plays the line as Kannada audio so the other person hears it in their language; their Kannada reply comes back translated and spoken in English. Recognition runs continuous (LiveBridge-style) and shows **live captions** — your words appear as you speak. Typed boxes keep the whole bridge usable without a mic, and every new sentence translates live (Google → MyMemory, no API key). |
 
 <details>
 <summary><strong>Deliberate non-claims</strong></summary>

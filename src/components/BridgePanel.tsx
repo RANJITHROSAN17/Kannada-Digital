@@ -17,6 +17,52 @@ import { Card, Chip, ScriptText, StatusLine } from '../components/ui';
 import { cn } from '../utils/cn';
 
 /**
+ * Live caption while the microphone is open — the words appear as they are
+ * recognised, like LiveBridge's caption panel. After a final result the
+ * recognised sentence stays visible until the translation takes over.
+ */
+function LiveCaption({
+  status,
+  interim,
+  input,
+  script,
+}: {
+  status: 'idle' | 'listening' | 'translating' | 'done' | 'error';
+  interim: string;
+  input: string;
+  script: 'en' | 'kn';
+}) {
+  if (status === 'listening') {
+    return (
+      <div className="mt-2.5 rounded-2xl border border-rose-200 bg-rose-50 p-3.5">
+        <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-rose-700">
+          <Circle className="h-3 w-3 animate-ping fill-current" aria-hidden="true" />
+          Listening — words appear here as you speak
+        </p>
+        <p className="mt-1.5 min-h-[2.75rem] text-base font-semibold leading-snug text-ink-800">
+          {interim || <span className="font-normal italic text-ink-400">Start talking now…</span>}
+        </p>
+      </div>
+    );
+  }
+  if (status === 'translating' && input) {
+    return (
+      <div className="mt-2.5 rounded-2xl border border-ink-100 bg-ivory-50 p-3.5">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-ink-400">Heard</p>
+        {script === 'kn' ? (
+          <ScriptText size="lg" className="mt-1 block font-semibold text-ink-800">
+            {input}
+          </ScriptText>
+        ) : (
+          <p className="mt-1 text-base font-semibold text-ink-800">{input}</p>
+        )}
+      </div>
+    );
+  }
+  return null;
+}
+
+/**
  * The ಸಂವಿಧಾನ bridge UI, in two sizes:
  *  - `full`    — the `/bridge` page: capability dashboard, transcript, chips.
  *  - `compact` — embedded on the home page: the same two-way mic conversation
@@ -190,12 +236,6 @@ export function BridgePanel({
             {your.status === 'listening' ? <Square className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
           </button>
           <div className="min-w-0 flex-1">
-            {your.status === 'listening' && your.interim ? (
-              <p className="flex items-center gap-2 text-xs font-semibold text-rose-700">
-                <Circle className="h-2.5 w-2.5 animate-ping fill-current" aria-hidden="true" />
-                {your.interim}
-              </p>
-            ) : null}
             <p className="text-[11px] font-medium text-ink-400">
               {your.status === 'listening'
                 ? 'Listening… speak now'
@@ -205,6 +245,8 @@ export function BridgePanel({
             </p>
           </div>
         </div>
+
+        <LiveCaption status={your.status} interim={your.interim} input={your.input} script="en" />
 
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <input
@@ -305,12 +347,6 @@ export function BridgePanel({
             {them.status === 'listening' ? <Square className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
           </button>
           <div className="min-w-0 flex-1">
-            {them.status === 'listening' && them.interim ? (
-              <p className="flex items-center gap-2 text-xs font-semibold text-rose-700">
-                <Circle className="h-2.5 w-2.5 animate-ping fill-current" aria-hidden="true" />
-                {them.interim}
-              </p>
-            ) : null}
             <p className="text-[11px] font-medium text-ink-400">
               {them.status === 'listening'
                 ? 'Listening in Kannada (kn-IN)…'
@@ -320,6 +356,8 @@ export function BridgePanel({
             </p>
           </div>
         </div>
+
+        <LiveCaption status={them.status} interim={them.interim} input={them.input} script="kn" />
 
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <input
