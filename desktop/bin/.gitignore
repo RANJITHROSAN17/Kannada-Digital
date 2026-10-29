@@ -1,0 +1,3 @@
+# Native binaries and models — built/downloaded during CI or local build
+*
+!.gitignore

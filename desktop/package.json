@@ -1,0 +1,53 @@
+{
+  "name": "kannadasaathi-desktop",
+  "productName": "Kannada Saathi",
+  "version": "1.0.0",
+  "description": "Kannada Saathi desktop app — offline Whisper recognition + espeak-ng Kannada TTS",
+  "main": "main.cjs",
+  "author": "Kannada Saathi",
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:web\" \"wait-on http://localhost:5173 && electron .\"",
+    "dev:web": "cd .. && vite",
+    "build": "cd .. && npm run build",
+    "dist": "cd .. && npm run build && electron-builder --win",
+    "dist:dir": "cd .. && npm run build && electron-builder --win --dir"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "concurrently": "^9.0.0",
+    "wait-on": "^8.0.0"
+  },
+  "build": {
+    "appId": "com.kannadasaathi.desktop",
+    "productName": "Kannada Saathi",
+    "directories": {
+      "output": "../release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "whisper.cjs",
+      "tts.cjs",
+      "../dist/**/*"
+    ],
+    "extraResources": [
+      { "from": "bin/whisper-cli.exe", "to": "whisper-cli" },
+      { "from": "bin/ggml-small.bin", "to": "models/ggml-small.bin" },
+      { "from": "bin/espeak-ng.exe", "to": "espeak-ng" },
+      { "from": "bin/espeak-ng-data", "to": "espeak-ng-data" }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

@@ -7,8 +7,14 @@
  * recorded with a real Kannada voice. Browser speech synthesis is kept only as
  * a fallback for text that is not in the dataset, and it speaks the
  * transliteration when no Kannada voice is available.
+ *
+ * Desktop mode (Electron): when window.desktopAPI is present, recognition
+ * uses bundled Whisper (offline, no Google servers) and Kannada TTS uses
+ * bundled espeak-ng — both run locally with no network and no API key.
  */
 import { pronunciationAudioUrl } from './pronunciationAudio';
+import { isDesktop, desktopRecognize, desktopSpeak } from './desktop';
+import { hasKannadaScript } from '../utils/text';
 
 export interface SpeechCapabilities {
   /** Text-to-speech engine exists at all. */
@@ -27,6 +33,10 @@ export interface SpeechCapabilities {
   microphoneAvailable: boolean;
   /** True when running on https/localhost, required for mic access. */
   secureContext: boolean;
+  /** Running inside the Electron desktop shell with Whisper available. */
+  desktopRecognition: boolean;
+  /** Running inside the Electron desktop shell with espeak-ng available. */
+  desktopKannadaTts: boolean;
 }
 
 type SpeechRecognitionLike = {
@@ -93,16 +103,23 @@ export function detectCapabilities(): SpeechCapabilities {
     window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1';
 
+  // Desktop shell: Whisper recognition and espeak-ng TTS replace browser APIs.
+  const desktop = isDesktop();
+  const desktopRecognition = desktop; // whisper is always bundled in the exe
+  const desktopKannadaTts = desktop; // espeak-ng is always bundled in the exe
+
   return {
     ttsSupported,
-    kannadaVoiceAvailable: Boolean(kannadaVoice),
-    kannadaVoiceName: kannadaVoice?.name ?? null,
-    anyVoiceAvailable: voices.length > 0,
-    recognitionSupported: Boolean(Recognition),
-    kannadaRecognitionRequested: Boolean(Recognition),
+    kannadaVoiceAvailable: Boolean(kannadaVoice) || desktopKannadaTts,
+    kannadaVoiceName: kannadaVoice?.name ?? (desktopKannadaTts ? 'espeak-ng (bundled)' : null),
+    anyVoiceAvailable: voices.length > 0 || desktopKannadaTts,
+    recognitionSupported: Boolean(Recognition) || desktopRecognition,
+    kannadaRecognitionRequested: Boolean(Recognition) || desktopRecognition,
     microphoneAvailable:
       typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia),
     secureContext: isSecure,
+    desktopRecognition,
+    desktopKannadaTts,
   };
 }
 
@@ -114,7 +131,7 @@ export function onVoicesChanged(callback: () => void): () => void {
   return () => synth.removeEventListener?.('voiceschanged', callback);
 }
 
-export type SpeakSource = 'recording' | 'browser-tts';
+export type SpeakSource = 'recording' | 'browser-tts' | 'desktop-tts';
 
 export interface SpeakOptions {
   /** Prefer the Kannada voice; falls back to the browser default. */
@@ -342,6 +359,43 @@ export function speak(text: string, options: SpeakOptions = {}): SpeakResult {
     return { started: false, voiceName: null, usedKannadaVoice: false, source: 'browser-tts', reason: 'empty-text' };
   }
 
+  // Desktop mode: espeak-ng for Kannada text not in the phrasebook.
+  // Fire-and-forget — the WAV arrives async and plays via a data-URI Audio.
+  if (isDesktop() && hasKannadaScript(trimmed)) {
+    stopCurrentAudio();
+    clearPendingSpeak();
+    clearWatchdog();
+    desktopSpeak(trimmed, 'kn')
+      .then((audio) => {
+        if (currentAudio) return; // user started another speak first
+        const audioEl = new Audio(`data:audio/wav;base64,${audio}`);
+        audioEl.onplaying = () => options.onStart?.();
+        audioEl.onended = () => {
+          if (currentAudio === audioEl) currentAudio = null;
+          options.onEnd?.();
+        };
+        audioEl.onerror = () => {
+          if (currentAudio === audioEl) currentAudio = null;
+          options.onError?.('Desktop TTS playback failed.');
+        };
+        currentAudio = audioEl;
+        audioEl.play().catch(() => {
+          if (currentAudio === audioEl) currentAudio = null;
+          options.onError?.('Desktop TTS playback failed.');
+        });
+      })
+      .catch((err: Error) => {
+        options.onError?.(`Desktop TTS failed: ${err.message}`);
+        speakWithBrowserTts(trimmed, options);
+      });
+    return {
+      started: true,
+      voiceName: 'espeak-ng (bundled)',
+      usedKannadaVoice: true,
+      source: 'desktop-tts',
+    };
+  }
+
   const url = pronunciationAudioUrl(trimmed);
   if (url) {
     const recorded = playRecordedAudio(url, trimmed, options);
@@ -375,20 +429,149 @@ export interface ListenOptions {
 }
 
 /**
+ * Desktop recognition: capture audio via getUserMedia, collect PCM samples,
+ * and send them to the main process for Whisper transcription.
+ *
+ * Uses ScriptProcessorNode (deprecated but universally supported) instead of
+ * AudioWorklet to avoid a separate worklet file — reliability matters more
+ * than the deprecation warning here.
+ */
+function listenOnceDesktop(options: ListenOptions): ListenHandle {
+  const { lang = 'kn-IN', onStart, onFinal, onError, onEnd } = options;
+  // Map browser lang codes to whisper codes: 'kn-IN' → 'kn', 'en-US' → 'en'.
+  const whisperLang = lang.startsWith('kn') ? 'kn' : 'en';
+  // Kannada audio is translated to English — whisper reliably confuses
+  // Indic scripts in transcribe mode, but --translate produces clean English.
+  const translate = whisperLang === 'kn';
+
+  let audioCtx: AudioContext | null = null;
+  let processor: ScriptProcessorNode | null = null;
+  let silentGain: GainNode | null = null;
+  let mediaStream: MediaStream | null = null;
+  const chunks: Float32Array[] = [];
+  let stopped = false;
+  let busy = false;
+  let sampleRate = 16000;
+
+  const cleanup = () => {
+    try { processor?.disconnect(); } catch { /* noop */ }
+    try { silentGain?.disconnect(); } catch { /* noop */ }
+    try { audioCtx?.close(); } catch { /* noop */ }
+    try { mediaStream?.getTracks().forEach((t) => t.stop()); } catch { /* noop */ }
+    audioCtx = null;
+    processor = null;
+    silentGain = null;
+    mediaStream = null;
+  };
+
+  const finishWithAudio = async () => {
+    if (busy) return;
+    busy = true;
+
+    const total = chunks.reduce((s, c) => s + c.length, 0);
+    const pcm = new Float32Array(total);
+    let offset = 0;
+    for (const c of chunks) {
+      pcm.set(c, offset);
+      offset += c.length;
+    }
+    chunks.length = 0;
+
+    if (pcm.length < 1600) {
+      onError?.('no-speech', 'No speech was detected. Tap the mic and say the whole sentence in one go.');
+      onEnd?.();
+      busy = false;
+      cleanup();
+      return;
+    }
+
+    try {
+      const text = await desktopRecognize(pcm, sampleRate, whisperLang, translate);
+      if (text.trim()) {
+        onFinal(text.trim(), null);
+      } else {
+        onError?.('no-speech', 'No speech was detected. Tap the mic and say the whole sentence in one go.');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Recognition failed.';
+      onError?.('unknown', message);
+    } finally {
+      onEnd?.();
+      busy = false;
+      cleanup();
+    }
+  };
+
+  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+    onError?.('audio-capture', 'No microphone was found. Type the phrase instead.');
+    onEnd?.();
+    return { stop: () => undefined };
+  }
+
+  navigator.mediaDevices
+    .getUserMedia({ audio: true })
+    .then((stream) => {
+      mediaStream = stream;
+      const Ctx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      audioCtx = new Ctx();
+      sampleRate = audioCtx.sampleRate;
+      const source = audioCtx.createMediaStreamSource(stream);
+      processor = audioCtx.createScriptProcessor(4096, 1, 1);
+      silentGain = audioCtx.createGain();
+      silentGain.gain.value = 0;
+
+      processor.onaudioprocess = (e: AudioProcessingEvent) => {
+        if (stopped) return;
+        const input = e.inputBuffer.getChannelData(0);
+        chunks.push(new Float32Array(input));
+      };
+
+      source.connect(processor);
+      processor.connect(silentGain);
+      silentGain.connect(audioCtx.destination);
+
+      onStart?.();
+    })
+    .catch((err: Error) => {
+      if (stopped) return;
+      const isPermission = err.name === 'NotAllowedError';
+      onError?.(
+        isPermission ? 'permission-denied' : 'audio-capture',
+        isPermission
+          ? 'Microphone permission was blocked. Allow it in the app settings, or type the phrase.'
+          : `Could not access the microphone: ${err.message}`,
+      );
+      onEnd?.();
+    });
+
+  return {
+    stop: () => {
+      if (stopped || busy) return;
+      stopped = true;
+      try { processor?.disconnect(); } catch { /* noop */ }
+      finishWithAudio();
+    },
+  };
+}
+
+/**
  * One-shot dictation, LiveBridge-style.
  *
- * Recognition runs `continuous` and every interim/final result is accumulated
- * (older Chrome/Android builds drop earlier words when only the last result is
- * read, and non-continuous mode auto-stops mid-sentence on mobile). The turn
- * is finalized once the speaker pauses after a final result, or when the
- * browser ends the session — one silent restart keeps flaky mobile sessions
- * alive.
+ * Desktop mode: audio is captured via getUserMedia → AudioContext →
+ * ScriptProcessorNode, downsampled and sent to the main process where
+ * Whisper transcribes it offline. English is transcribed directly; Kannada
+ * is translated to English via whisper's --translate mode (the model
+ * reliably confuses Indic scripts in transcribe mode).
  *
- * Chrome's implementation sends audio to a network service, so `network`
- * errors are surfaced separately from permission ones — the difference
- * matters for a demo on venue Wi-Fi.
+ * Web mode: webkitSpeechRecognition with continuous accumulation, 900ms
+ * auto-finalize, and one retry on transient errors.
  */
 export function listenOnce(options: ListenOptions): ListenHandle {
+  if (isDesktop()) {
+    return listenOnceDesktop(options);
+  }
   const { lang = 'kn-IN', onStart, onInterim, onFinal, onError, onEnd } = options;
   const Recognition = getRecognitionCtor();
 
