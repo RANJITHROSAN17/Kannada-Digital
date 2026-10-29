@@ -26,7 +26,7 @@ jobs:
         run: npm ci
 
       - name: Install desktop deps
-        run: cd desktop && npm install
+        run: cd desktop && npm ci
 
       - name: Create desktop/bin directory
         run: mkdir -p desktop/bin

@@ -14,10 +14,10 @@
     "dist:dir": "cd .. && npm run build && electron-builder --win --dir"
   },
   "devDependencies": {
-    "electron": "^33.0.0",
-    "electron-builder": "^25.0.0",
-    "concurrently": "^9.0.0",
-    "wait-on": "^8.0.0"
+    "electron": "^45.1.0",
+    "electron-builder": "^26.18.0",
+    "concurrently": "^10.0.6",
+    "wait-on": "^9.5.1"
   },
   "build": {
     "appId": "com.kannadasaathi.desktop",
@@ -34,10 +34,22 @@
       "../dist/**/*"
     ],
     "extraResources": [
-      { "from": "bin/whisper-cli.exe", "to": "whisper-cli" },
-      { "from": "bin/ggml-small.bin", "to": "models/ggml-small.bin" },
-      { "from": "bin/espeak-ng.exe", "to": "espeak-ng" },
-      { "from": "bin/espeak-ng-data", "to": "espeak-ng-data" }
+      {
+        "from": "bin/whisper-cli.exe",
+        "to": "whisper-cli"
+      },
+      {
+        "from": "bin/ggml-small.bin",
+        "to": "models/ggml-small.bin"
+      },
+      {
+        "from": "bin/espeak-ng.exe",
+        "to": "espeak-ng"
+      },
+      {
+        "from": "bin/espeak-ng-data",
+        "to": "espeak-ng-data"
+      }
     ],
     "win": {
       "target": "nsis",
