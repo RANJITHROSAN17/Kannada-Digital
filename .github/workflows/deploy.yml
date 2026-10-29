@@ -30,7 +30,7 @@ jobs:
       # Relative asset base + HashRouter: one build works on the Pages
       # sub-path, so no VITE_BASE_PATH is required.
       - run: npm run build
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
