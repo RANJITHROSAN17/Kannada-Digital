@@ -6,6 +6,7 @@ import {
   Compass,
   Home,
   Landmark,
+  Languages,
   Menu,
   MessagesSquare,
   Mic,
@@ -24,6 +25,7 @@ export const navItems = [
   { to: '/', label: 'Home', full: 'Home', icon: Home, end: true },
   { to: '/situations', label: 'Situations', full: 'Real-life situations', icon: Compass },
   { to: '/practice', label: 'Practice', full: 'Voice practice', icon: Mic },
+  { to: '/bridge', label: 'Bridge', full: 'Live voice bridge', icon: Languages },
   { to: '/conversations', label: 'Scenes', full: 'Conversation practice', icon: MessagesSquare },
   { to: '/phrasebook', label: 'Phrasebook', full: 'Searchable phrasebook', icon: BookOpen },
   { to: '/quiz', label: 'Quiz', full: 'Quiz & matching', icon: Brain },
@@ -32,7 +34,7 @@ export const navItems = [
 ];
 
 const mobileItems = navItems.filter((item) =>
-  ['/', '/situations', '/practice', '/favorites'].includes(item.to),
+  ['/', '/situations', '/practice', '/bridge', '/favorites'].includes(item.to),
 );
 
 function Brand({ onClick }: { onClick?: () => void }) {

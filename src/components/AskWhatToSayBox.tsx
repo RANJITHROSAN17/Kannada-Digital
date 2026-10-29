@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CornerDownLeft, Sparkles } from 'lucide-react';
+import { Check, Copy, CornerDownLeft, Languages, Sparkles, Volume2 } from 'lucide-react';
 import { askAssistant, assistantMode, assistantLabel } from '../services/assistant';
 import type { AssistantAnswer } from '../services/assistant';
 import { phrases } from '../data/phrases';
 import { PhraseCard } from './PhraseCard';
 import { Card, Chip, StatusLine } from './ui';
+import { speak } from '../services/speech';
+import { translateToKannada } from '../services/translation';
+import { romanizeKannada } from '../utils/romanize';
 
 /**
  * "What do I say?" — ask in English, get real dataset answers.
@@ -18,8 +21,72 @@ export function AskWhatToSayBox({ autoFocus = false }: { autoFocus?: boolean }) 
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState<AssistantAnswer | null>(null);
   const [pending, setPending] = useState(false);
+  const [live, setLive] = useState<{ kannada: string; roman: string; engine: string } | null>(null);
+  const [livePending, setLivePending] = useState(false);
+  const [liveError, setLiveError] = useState<string | null>(null);
+  const [copiedLive, setCopiedLive] = useState(false);
 
-  const examples = ['where is the bus stand', 'how much for one kilo', 'I have fever since two days'];
+  const examples = [
+    'where is the bus stand',
+    'how much for one kilo',
+    'I have fever since two days',
+    'what is the project status',
+  ];
+
+  // A new question invalidates a previous live translation.
+  useEffect(() => {
+    setLive(null);
+    setLiveError(null);
+    setCopiedLive(false);
+  }, [question]);
+
+  /**
+   * Live translation for sentences the reviewed phrasebook does not contain.
+   * This is what makes "What is the project status?" work — the offline
+   * retrieval is a starter set, not a dictionary.
+   */
+  const runLive = async (value = question) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    setLivePending(true);
+    setLiveError(null);
+    setLive(null);
+    try {
+      const result = await translateToKannada(trimmed);
+      setLive({
+        kannada: result.text,
+        roman: romanizeKannada(result.text),
+        engine: result.engine,
+      });
+    } catch (error) {
+      setLiveError(
+        error instanceof Error && error.message
+          ? error.message
+          : 'Live translation failed — check your network and try again.',
+      );
+    } finally {
+      setLivePending(false);
+    }
+  };
+
+  const playLive = () => {
+    if (!live) return;
+    const audio = speak(live.kannada, { rate: 0.82, fallbackText: live.roman });
+    if (!audio.started) {
+      setLiveError('This browser has no audio engine to play the Kannada line.');
+    }
+  };
+
+  const copyLive = async () => {
+    if (!live) return;
+    try {
+      await navigator.clipboard.writeText(live.kannada);
+      setCopiedLive(true);
+      window.setTimeout(() => setCopiedLive(false), 1600);
+    } catch {
+      window.alert('Clipboard blocked by your browser. Long-press or select the text to copy it.');
+    }
+  };
 
   const run = async (value = question) => {
     const trimmed = value.trim();
@@ -119,13 +186,63 @@ export function AskWhatToSayBox({ autoFocus = false }: { autoFocus?: boolean }) 
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-ink-400">
-              No match in the {phrases.length}-phrase starter set.{' '}
-              <Link to="/phrasebook" className="link">
-                Browse the phrasebook
-              </Link>{' '}
-              instead.
-            </p>
+            <div className="mt-3">
+              <div className="rounded-xl border border-saffron-200 bg-saffron-50 p-3">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-saffron-700">
+                  New sentence? Live translation
+                </p>
+                <p className="mt-1 text-[13px] leading-relaxed text-ink-600">
+                  The phrasebook is a reviewed starter set ({phrases.length} lines). For any sentence it
+                  does not contain — like “what is the project status” — translate it live. No API key.
+                </p>
+                {!live && !liveError ? (
+                  <button
+                    type="button"
+                    className="btn-accent mt-3 !py-2"
+                    onClick={() => void runLive()}
+                    disabled={livePending || !question.trim()}
+                  >
+                    <Languages className="h-4 w-4" aria-hidden="true" />
+                    {livePending ? 'Translating…' : 'Translate this live to Kannada'}
+                  </button>
+                ) : null}
+                {live ? (
+                  <div className="mt-3 rounded-xl border border-ink-100 bg-white p-3.5">
+                    <p className="knn text-xl font-semibold text-ink-800" lang="kn">
+                      {live.kannada}
+                    </p>
+                    <p className="mt-1 text-sm font-medium italic text-ink-400">≈ {live.roman}</p>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <button type="button" className="btn-primary !py-2" onClick={playLive}>
+                        <Volume2 className="h-4 w-4" aria-hidden="true" />
+                        Play Kannada audio
+                      </button>
+                      <Chip tone="info">via {live.engine}</Chip>
+                      <button type="button" className="btn-ghost !py-2" onClick={() => void copyLive()}>
+                        {copiedLive ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        Copy
+                      </button>
+                    </div>
+                    <p className="mt-2.5 text-[11px] leading-relaxed text-ink-400">
+                      Machine translation — the romanisation is approximate. Verify with a native speaker
+                      before repeating an important line.
+                    </p>
+                  </div>
+                ) : null}
+                {liveError ? (
+                  <div className="mt-2">
+                    <StatusLine tone="error">{liveError}</StatusLine>
+                  </div>
+                ) : null}
+              </div>
+              <p className="mt-2 text-[13px] text-ink-400">
+                Or{' '}
+                <Link to="/phrasebook" className="link">
+                  browse the phrasebook
+                </Link>{' '}
+                for reviewed everyday lines that work offline.
+              </p>
+            </div>
           )}
         </div>
       ) : null}

@@ -2,6 +2,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/Layout';
 import { ProgressProvider } from './hooks/useProgress';
 import { HomePage } from './pages/HomePage';
+import { BridgePage } from './pages/BridgePage';
 import { SituationDetailPage, SituationsPage } from './pages/SituationsPage';
 import { VoicePracticePage } from './pages/VoicePracticePage';
 import { ConversationDetailPage, ConversationsPage } from './pages/ConversationsPage';
@@ -23,6 +24,7 @@ export default function App() {
         <AppShell>
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/bridge" element={<BridgePage />} />
             <Route path="/situations" element={<SituationsPage />} />
             <Route path="/situations/:categoryId" element={<SituationDetailPage />} />
             <Route path="/practice" element={<VoicePracticePage />} />

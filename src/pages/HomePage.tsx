@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Bookmark, Flame, Mic, Quote, Sun } from 'lucide-react';
+import { ArrowRight, Bookmark, Flame, Languages, Mic, Quote, Sun } from 'lucide-react';
 import { categories } from '../data/categories';
 import { phrases } from '../data/phrases';
 import { conversations } from '../data/conversations';
@@ -65,6 +65,13 @@ export function HomePage() {
             <Link to="/practice" className="btn-accent">
               <Mic className="h-4 w-4" aria-hidden="true" />
               Start Speaking Kannada
+            </Link>
+            <Link
+              to="/bridge"
+              className="btn border border-ivory-50/25 bg-ivory-50/10 text-ivory-50 hover:bg-ivory-50/20"
+            >
+              <Languages className="h-4 w-4" aria-hidden="true" />
+              Live bridge with a Kannada speaker
             </Link>
             <Link
               to="/situations"
@@ -185,6 +192,31 @@ export function HomePage() {
       {/* ------------------------------------------------------------- ask box */}
       <section className="mt-6">
         <AskWhatToSayBox />
+      </section>
+
+      {/* ----------------------------------------------------------- live bridge */}
+      <section className="mt-6">
+        <Card className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-saffron-100 text-saffron-700">
+              <Languages className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div>
+              <h2 className="text-base font-bold text-ink-800">
+                ಸಂವಿಧಾನ · Live bridge
+              </h2>
+              <p className="mt-0.5 text-sm leading-relaxed text-ink-400">
+                Speak English — the app plays it in Kannada audio so the other person hears it. They reply in
+                Kannada — you hear it back in English. Type anything: every new sentence works, not just the
+                reviewed phrasebook.
+              </p>
+            </div>
+          </div>
+          <Link to="/bridge" className="btn-primary shrink-0">
+            Open the bridge
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </Card>
       </section>
 
       {/* ------------------------------------------------------- situations */}

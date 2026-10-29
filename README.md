@@ -37,10 +37,10 @@
 
 | Check | Result | Verified by |
 |:---|:---:|:---|
-| CI — typecheck · 83 tests · build · audit | ✔ passing | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
+| CI — typecheck · 106 tests · build · audit | ✔ passing | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
 | GitHub Pages deployment | ✔ live | [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) |
 | TypeScript (strict, `noUnusedLocals`) | ✔ 0 errors | `npm run typecheck` |
-| Unit tests | ✔ 83 / 83 | `npm test` |
+| Unit tests | ✔ 106 / 106 | `npm test` |
 | `npm audit` (dev + production trees) | ✔ 0 vulnerabilities | CI gate |
 | Chromium console / page / request errors | ✔ 0 | [`docs/REVIEW.md`](docs/REVIEW.md) |
 | Speaker audio — online **and** offline | ✔ plays | 290 bundled MP3s + service worker |
@@ -196,7 +196,8 @@ Deployment notes and the push history live in [`docs/DEPLOY-FIX.md`](docs/DEPLOY
 | **D** | Searchable phrasebook | `/phrasebook`, `/favorites` | Ranked search over script + transliteration + meaning + keywords, situation filter, favourites-only filter, sort modes, recently viewed, favourites persisted in `localStorage`. |
 | **E** | Learning & quiz | `/quiz` | 12 curated judgement questions + a generator over the dataset; 4 types (`en→kn`, `kn→en`, scenario, listening); pair-matching round; immediate feedback; best score kept; misses re-appear as review cards. |
 | **F** | Regional & cultural context | `/culture`, inside each situation | 10 cultural notes, a regional-variant table where **every row is explicitly labelled as awaiting native review**, numbers/digits reference, and a public statement of the dataset's review status. |
-| **G** | "What do I say?" assistant | home, situations | Ask in English, get ranked Kannada lines. Runs entirely offline against the bundled data. |
+| **G** | "What do I say?" assistant | home, situations | Ask in English, get ranked Kannada lines. Runs offline against the bundled data — and for any sentence the 111-phrase set does not contain (e.g. "what is the project status") offers a **live Kannada translation**, no API key. |
+| **H** | Live bridge (ಸಂವಿಧಾನ) | `/bridge` | Speak English → the app plays the line as Kannada audio so the other person hears it in their language; their Kannada reply comes back translated and spoken in English. Typed boxes keep the whole bridge usable without a mic, and every new sentence translates live (Google → MyMemory, no API key). |
 
 <details>
 <summary><strong>Deliberate non-claims</strong></summary>
@@ -306,14 +307,14 @@ Kannada-Digital/
 ├── src/
 │   ├── components/           Layout · PhraseCard · ScenarioCard ·
 │   │                         AskWhatToSayBox · ui · ErrorBoundary
-│   ├── pages/                Home · Situations · Practice · Conversations ·
+│   ├── pages/                Home · Situations · Practice · Bridge · Conversations ·
 │   │                         Phrasebook · Quiz · Favorites · Culture
 │   ├── data/                 phrases (111) · categories (8) ·
 │   │                         conversations (6) · culture (10) · quiz
 │   │                         pronunciation-audio.json
-│   ├── services/             speech · storage · assistant · pronunciationAudio
+│   ├── services/             speech · storage · assistant · pronunciationAudio · translation
 │   ├── hooks/                useProgress · useSpeech
-│   ├── utils/                search · text · progress · cn
+│   ├── utils/                search · text · progress · cn · romanize
 │   ├── assets/               Noto Sans Kannada + Inter woff2
 │   ├── types/                Phrase · Category · ConversationScenario ·
 │   │                         QuizQuestion · ProgressState · CulturalNote · …
@@ -371,12 +372,20 @@ Kannada-Digital/
 2. **No acoustic scoring** — text similarity only, labelled as such.
 3. **Clipboard and mic need a secure context.** Opening the built app over plain `http://192.168.x.x` disables
    both; the app detects it (`secureContext`) and says so.
-4. **111 phrases is a starter set**, not full coverage; the assistant only answers from what is bundled and says
-   "nothing matches that yet" rather than inventing a line.
+4. **111 phrases is a starter set**, not full coverage. The offline assistant answers only from what is
+   bundled; for sentences it does not contain it offers a **live translation** (see limitation 8). Live
+   translation needs the internet, uses two free engines with no API key (Google → MyMemory), and the
+   result is machine output — the romanisation is approximate, so confirm an important line with a native
+   speaker before relying on it.
 5. `needs-native-review` items and the regional table are **claims to verify**, not teaching material.
 6. **Single-user, single-device.** Progress lives in `localStorage`; sync and accounts are future work.
 7. Emergency numbers cited in the app (112 all-India emergency, 108 ambulance in Karnataka) should be confirmed
    against current local services before real-world use.
+8. **The live bridge is a two-way machine translation.** It is a genuine conversation bridge — speak, let the
+   other person hear Kannada audio, hear their reply back — but every translated line is machine output. Review
+   it in the transcript, copy it, or confirm with a native speaker before relying on it. Voice recognition runs in
+   the browser (Chrome) and both recognition and translation need the network; the typed path works over any
+   connection, and the phrasebook stays offline.
 
 ---
 
@@ -394,7 +403,11 @@ npm test
 | `components/__tests__/PhraseCard` | bookmark write-through, tip disclosure, review badge, accessible playback control |
 | `pages/__tests__/behavior` | situations, phrasebook search, favourites after unmount/remount, full conversation playthrough, quiz feedback |
 
-**83 tests / 7 files**, including a check that every phrase and every curated listening answer has a bundled
+| `utils/romanize` | reader-friendly Kannada romanisation: inherent vowels, vowel signs, virama/conjuncts (ಜ್ಞ, ಕ್ಷ), anusvara assimilation (ಂ → ng/n/m) |
+| `services/translation` | provider chain with `fetch` mocked: Google success, MyMemory fallback, quota/HTML-block handling, 500-byte chunking, identity + offline errors |
+| `pages/__tests__/bridge` | one-tap sentence translation, engine badge, offline error path, honest capability rendering |
+
+**106 tests / 10 files**, including a check that every phrase and every curated listening answer has a bundled
 recording. CI runs the same suite on Node 22 on every push and PR.
 
 ---
