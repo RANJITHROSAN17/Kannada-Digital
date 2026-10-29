@@ -134,4 +134,39 @@ describe('BridgePage', () => {
       delete (navigator as unknown as { mediaDevices?: unknown }).mediaDevices;
     }
   });
+
+  it('restores the last conversation after a refresh', async () => {
+    window.localStorage.setItem(
+      'kannada-saathi:bridge:v1',
+      JSON.stringify({
+        transcript: [
+          {
+            id: 0,
+            side: 'you',
+            text: 'ಧನ್ಯವಾದಗಳು',
+            roman: 'dhanyavadagalu',
+            engine: 'google',
+          },
+        ],
+        your: {
+          input: 'Thank you',
+          output: 'ಧನ್ಯವಾದಗಳು',
+          roman: 'dhanyavadagalu',
+          engine: 'google',
+        },
+        them: { input: '', output: '' },
+        savedAt: new Date().toISOString(),
+      }),
+    );
+
+    try {
+      renderBridge();
+      await waitFor(() =>
+        expect(screen.getByText(/Restored from your last conversation/)).toBeInTheDocument(),
+      );
+      expect(screen.getAllByText('ಧನ್ಯವಾದಗಳು').length).toBeGreaterThanOrEqual(1);
+    } finally {
+      window.localStorage.clear();
+    }
+  });
 });

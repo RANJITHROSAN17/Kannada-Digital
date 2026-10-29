@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { detectCapabilities, listenOnce, speak, stopSpeaking } from '../services/speech';
 import { startMicLevel, type MicLevelHandle } from '../services/micLevel';
 import {
+  clearBridgeSnapshot,
+  loadBridgeSnapshot,
+  saveBridgeSnapshot,
+} from '../services/bridgeStore';
+import {
   translateToEnglish,
   translateToKannada,
   type TranslationEngine,
@@ -64,6 +69,8 @@ export interface BridgeHook {
   setAutoFlow: (value: boolean) => void;
   transcript: BridgeTranscriptEntry[];
   copiedKey: string | null;
+  /** True when the conversation was restored from the previous session. */
+  restored: boolean;
   /** Result of the one-tap microphone self-test (diagnostics). */
   micTest: MicTestResult;
   /** Live 0..1 microphone input level while testing (null = not metering). */
@@ -115,6 +122,31 @@ export function useBridge(): BridgeHook {
     [],
   );
 
+  // Restore the last conversation after a refresh, and keep it persisted.
+  const [restored, setRestored] = useState(false);
+
+  useEffect(() => {
+    const snapshot = loadBridgeSnapshot();
+    if (!snapshot) return;
+    entryIdRef.current = snapshot.transcript.length;
+    setTranscript(snapshot.transcript);
+    setYour((state) => ({
+      ...state,
+      ...snapshot.your,
+      status: snapshot.your.output ? 'done' : state.status,
+    }));
+    setThem((state) => ({
+      ...state,
+      ...snapshot.them,
+      status: snapshot.them.output ? 'done' : state.status,
+    }));
+    setRestored(true);
+  }, []);
+
+  useEffect(() => {
+    saveBridgeSnapshot(transcript, your, them);
+  }, [transcript, your.input, your.output, your.roman, them.input, them.output]);
+
   const canMic =
     capabilities.recognitionSupported &&
     capabilities.microphoneAvailable &&
@@ -163,6 +195,8 @@ export function useBridge(): BridgeHook {
     setYour({ ...initialSide });
     setThem({ ...initialSide });
     setTranscript([]);
+    setRestored(false);
+    clearBridgeSnapshot();
   };
 
   const setYourInput = (value: string) =>
@@ -459,6 +493,7 @@ export function useBridge(): BridgeHook {
     setAutoFlow,
     transcript,
     copiedKey,
+    restored,
     micTest,
     micLevel,
     testMicrophone,

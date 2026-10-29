@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { CategoryId, PracticeAttempt, ProgressState } from '../types';
 import {
@@ -37,8 +37,6 @@ const ProgressContext = createContext<ProgressContextValue | null>(null);
 
 export function ProgressProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState<ProgressState>(() => loadProgress());
-  const queueRef = useRef(progress);
-  queueRef.current = progress;
 
   // Persist after render; a try/catch inside saveProgress keeps quota errors
   // from breaking the UI.

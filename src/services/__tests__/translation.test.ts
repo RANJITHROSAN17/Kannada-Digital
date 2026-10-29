@@ -155,3 +155,61 @@ describe('translateToKannada / translateToEnglish', () => {
     expect(result.engine).toBe('google');
   });
 });
+
+describe('translateText — abort signal hygiene', () => {
+  it('detaches the abort listener when the request completes', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        fakeJson([
+          [['ಧನ್ಯವಾದಗಳು']],
+          null,
+          'en',
+          'kn',
+        ]),
+      ),
+    );
+
+    const controller = new AbortController();
+    const addSpy = vi.spyOn(controller.signal, 'addEventListener');
+    const removeSpy = vi.spyOn(controller.signal, 'removeEventListener');
+
+    await translateText('Thank you', 'en', 'kn', { signal: controller.signal });
+
+    // The external abort listener must be removed once the request ends —
+    // the timeout helper historically leaked one listener per translation.
+    const registered = addSpy.mock.calls.find((call) => call[0] === 'abort');
+    expect(registered).toBeDefined();
+    expect(removeSpy).toHaveBeenCalledWith('abort', registered?.[1]);
+  });
+
+  it('still aborts mid-request when the external signal fires', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(
+        (_input: unknown, init?: { signal?: AbortSignal }) =>
+          new Promise<FakeResponse>((_resolve, reject) => {
+            // Mirror real fetch: reject with an AbortError when the signal
+            // aborts — and immediately if it was already aborted at call time.
+            const fail = () => {
+              const error = new Error('The operation was aborted.');
+              error.name = 'AbortError';
+              reject(error);
+            };
+            if (init?.signal?.aborted) fail();
+            else init?.signal?.addEventListener('abort', fail);
+          }),
+      ),
+    );
+
+    const controller = new AbortController();
+    const promise = translateText('some sentence that never resolves', 'en', 'kn', {
+      signal: controller.signal,
+    });
+    // Give the listener a chance to attach, then abort.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    controller.abort();
+
+    await expect(promise).rejects.toThrow(/translation|network|abort|timed out|unavailable/i);
+  });
+});

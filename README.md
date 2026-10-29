@@ -7,13 +7,13 @@
 <p>
   <a href="https://github.com/RANJITHROSAN17/Kannada-Digital/actions/workflows/ci.yml"><img src="https://github.com/RANJITHROSAN17/Kannada-Digital/actions/workflows/ci.yml/badge.svg" alt="CI" height="20"></a>
   <a href="https://github.com/RANJITHROSAN17/Kannada-Digital/actions/workflows/deploy.yml"><img src="https://github.com/RANJITHROSAN17/Kannada-Digital/actions/workflows/deploy.yml/badge.svg" alt="Deploy" height="20"></a>
-  <a href="docs/REVIEW.md"><img src="https://img.shields.io/badge/tests-83%20passing-2ea44f?style=flat-square" alt="83 tests passing" height="20"></a>
+  <a href="docs/REVIEW.md"><img src="https://img.shields.io/badge/tests-83%20passing-2ea44f?style=flat-square" alt="133 tests passing" height="20"></a>
   <a href="docs/REVIEW.md"><img src="https://img.shields.io/badge/npm%20audit-0%20vulnerabilities-2ea44f?style=flat-square" alt="0 vulnerabilities" height="20"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MIT-3b6cb0?style=flat-square" alt="MIT licence" height="20"></a>
   <a href="public/manifest.webmanifest"><img src="https://img.shields.io/badge/PWA-installable-6f5bd6?style=flat-square" alt="Installable PWA" height="20"></a>
 </p>
 
-<p><img src="docs/images/hero-banner.png" alt="Kannada Saathi — 111 phrases, 8 situations, 6 role-plays, 290 audio clips, 83 tests, 0 vulnerabilities" width="900"></p>
+<p><img src="docs/images/hero-banner.png" alt="Kannada Saathi — 111 phrases, 8 situations, 6 role-plays, 290 audio clips, 133 tests, 0 vulnerabilities" width="900"></p>
 
 <p>
   <a href="https://ranjithrosan17.github.io/Kannada-Digital/"><strong>Live demo</strong></a> &nbsp;·&nbsp;
@@ -37,10 +37,10 @@
 
 | Check | Result | Verified by |
 |:---|:---:|:---|
-| CI — typecheck · 106 tests · build · audit | ✔ passing | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
+| CI — typecheck · 133 tests · build · audit | ✔ passing | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
 | GitHub Pages deployment | ✔ live | [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) |
 | TypeScript (strict, `noUnusedLocals`) | ✔ 0 errors | `npm run typecheck` |
-| Unit tests | ✔ 106 / 106 | `npm test` |
+| Unit tests | ✔ 133 / 133 | `npm test` |
 | `npm audit` (dev + production trees) | ✔ 0 vulnerabilities | CI gate |
 | Chromium console / page / request errors | ✔ 0 | [`docs/REVIEW.md`](docs/REVIEW.md) |
 | Speaker audio — online **and** offline | ✔ plays | 290 bundled MP3s + service worker |
@@ -124,7 +124,7 @@ npm run dev          # http://localhost:5173
 |:---|:---|
 | `npm run dev` | Vite dev server with HMR on `:5173` |
 | `npm run typecheck` | `tsc --noEmit` — strict, no unused locals/parameters |
-| `npm test` | Vitest — 83 tests across 7 files |
+| `npm test` | Vitest — 133 tests across 14 files |
 | `npm run build` | typecheck → `vite build` → generate the offline asset precache list |
 | `npm run preview` | serve the built `dist/` on `:4173` |
 | `npm audit` | 0 vulnerabilities (also enforced in CI) |
@@ -407,7 +407,7 @@ npm test
 | `services/translation` | provider chain with `fetch` mocked: Google success, MyMemory fallback, quota/HTML-block handling, 500-byte chunking, identity + offline errors |
 | `pages/__tests__/bridge` | one-tap sentence translation, engine badge, offline error path, honest capability rendering |
 
-**106 tests / 10 files**, including a check that every phrase and every curated listening answer has a bundled
+**133 tests / 14 files**, including a check that every phrase and every curated listening answer has a bundled
 recording. CI runs the same suite on Node 22 on every push and PR.
 
 ---
@@ -463,7 +463,7 @@ Full severity-ranked findings, verification evidence, remaining recommendations 
 | **State** | one React context (`useProgress`) + a single versioned `localStorage` key |
 | **Speech** | 290 bundled `kn-IN` MP3s + Web Speech APIs behind a typed capability layer |
 | **Offline** | `public/sw.js` (cache-first, v4) + `manifest.webmanifest` + generated precache lists |
-| **Tests** | Vitest 4.1.12 · Testing Library · jsdom — 83 tests / 7 files |
+| **Tests** | Vitest 4.1.12 · Testing Library · jsdom — 133 tests / 14 files |
 | **CI / CD** | GitHub Actions (`ci.yml`, `deploy.yml`) on Node 22, Pages deployment |
 | **Not used** | no state library · no CSS-in-JS · no backend · no database · no third-party API call |
 
@@ -495,6 +495,6 @@ Full severity-ranked findings, verification evidence, remaining recommendations 
   <a href="docs/Kannada-Saathi-Demo-Video.mp4">Video</a>
 </p>
 
-<p><sub>Offline-first · No API key · 83 tests · 0 vulnerabilities</sub></p>
+<p><sub>Offline-first · No API key · 133 tests · 0 vulnerabilities</sub></p>
 
 </div>

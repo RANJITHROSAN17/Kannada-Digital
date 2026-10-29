@@ -120,6 +120,7 @@ export function BridgePanel({
     setAutoFlow,
     transcript,
     copiedKey,
+    restored,
     micTest,
     micLevel,
     testMicrophone,
@@ -578,6 +579,11 @@ export function BridgePanel({
               safe: your favourites and progress are stored on this device.)
             </p>
           )}
+          {restored ? (
+            <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-[12px] font-semibold text-amber-800">
+              Restored from your last conversation — tap Clear to start fresh.
+            </p>
+          ) : null}
         </Card>
       ) : null}
     </div>

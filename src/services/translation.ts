@@ -87,12 +87,23 @@ interface TimeoutHandle {
 function createTimeout(timeoutMs: number, external?: AbortSignal): TimeoutHandle {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), timeoutMs);
-  external?.addEventListener?.('abort', () => controller.abort(), { once: true });
+  // The same handler reference must be used for add and remove — passing a
+  // fresh arrow function to removeEventListener would never match and leak
+  // the listener on every translation.
+  const onExternalAbort = () => controller.abort();
+  if (external?.aborted) {
+    // The caller aborted before this request started (e.g. the bridge
+    // cleared the conversation while the first provider was still
+    // answering): fail fast instead of waiting for the timer.
+    controller.abort();
+  } else {
+    external?.addEventListener?.('abort', onExternalAbort, { once: true });
+  }
   return {
     signal: controller.signal,
     clear: () => {
       window.clearTimeout(timer);
-      external?.removeEventListener?.('abort', () => controller.abort());
+      external?.removeEventListener?.('abort', onExternalAbort);
     },
   };
 }

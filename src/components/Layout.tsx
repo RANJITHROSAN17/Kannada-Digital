@@ -11,10 +11,12 @@ import {
   MessagesSquare,
   Mic,
   Star,
+  WifiOff,
   X,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useProgress } from '../hooks/useProgress';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
 /**
  * Labels are kept short so the row never wraps at the 1024px breakpoint; the
@@ -79,6 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const { favorites } = useProgress();
+  const online = useOnlineStatus();
 
   useEffect(() => setOpen(false), [location.pathname]);
 
@@ -143,6 +146,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
         ) : null}
       </header>
+
+      {!online ? (
+        <div className="border-b border-amber-300 bg-amber-50">
+          <p className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 text-[13px] font-semibold text-amber-900">
+            <WifiOff className="h-4 w-4 shrink-0" aria-hidden="true" />
+            You're offline — the phrasebook, situations and quizzes work. Live translation and the voice
+            bridge need the network.
+          </p>
+        </div>
+      ) : null}
 
       <main id="main" className="flex-1 pb-24 lg:pb-10">
         {children}

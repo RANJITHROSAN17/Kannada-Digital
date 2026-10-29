@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ProgressProvider } from '../../hooks/useProgress';
+import { AppShell } from '../../components/Layout';
 import { PhrasebookPage } from '../PhrasebookPage';
 import { FavoritesPage } from '../FavoritesPage';
 import { QuizPage } from '../QuizPage';
@@ -164,5 +165,33 @@ describe('Quiz', () => {
 
     fireEvent.click(nextButton);
     expect(screen.getByText('Round progress')).toBeInTheDocument();
+  });
+});
+
+describe('Offline banner', () => {
+  it('appears when the network drops and disappears when it returns', async () => {
+    const { unmount } = render(
+      <MemoryRouter>
+        <ProgressProvider>
+          <AppShell>
+            <p>page</p>
+          </AppShell>
+        </ProgressProvider>
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByText(/You're offline/)).not.toBeInTheDocument();
+
+    window.dispatchEvent(new Event('offline'));
+    await waitFor(() =>
+      expect(screen.getByText(/You're offline/)).toBeInTheDocument(),
+    );
+
+    window.dispatchEvent(new Event('online'));
+    await waitFor(() =>
+      expect(screen.queryByText(/You're offline/)).not.toBeInTheDocument(),
+    );
+
+    unmount();
   });
 });
