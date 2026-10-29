@@ -7,6 +7,7 @@ import { conversations } from '../data/conversations';
 import { ScenarioCard } from '../components/ScenarioCard';
 import { AskWhatToSayBox } from '../components/AskWhatToSayBox';
 import { PhraseCard } from '../components/PhraseCard';
+import { BridgePanel, QUICK_SENTENCES } from '../components/BridgePanel';
 import { Card, Meter, SectionHeading, ScriptText } from '../components/ui';
 import { useProgress } from '../hooks/useProgress';
 import { useSpeech } from '../hooks/useSpeech';
@@ -194,29 +195,20 @@ export function HomePage() {
         <AskWhatToSayBox />
       </section>
 
-      {/* ----------------------------------------------------------- live bridge */}
+      {/* --------------------------------------------- speak & hear bridge */}
       <section className="mt-6">
-        <Card className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-saffron-100 text-saffron-700">
-              <Languages className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <div>
-              <h2 className="text-base font-bold text-ink-800">
-                ಸಂವಿಧಾನ · Live bridge
-              </h2>
-              <p className="mt-0.5 text-sm leading-relaxed text-ink-400">
-                Speak English — the app plays it in Kannada audio so the other person hears it. They reply in
-                Kannada — you hear it back in English. Type anything: every new sentence works, not just the
-                reviewed phrasebook.
-              </p>
-            </div>
-          </div>
-          <Link to="/bridge" className="btn-primary shrink-0">
-            Open the bridge
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
-        </Card>
+        <SectionHeading
+          eyebrow="Speak & hear · ಸಂವಿಧಾನ"
+          title="Talk to anyone — in any language"
+          description="Tap the mic and speak English: the app plays your sentence in Kannada audio so the other person hears it in their language. They reply in Kannada — you hear it back in English. Works for any sentence, not just the phrasebook."
+          action={
+            <Link to="/bridge" className="btn-ghost !py-2">
+              Full bridge page
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          }
+        />
+        <BridgePanel variant="compact" quickSentences={QUICK_SENTENCES.slice(0, 4)} />
       </section>
 
       {/* ------------------------------------------------------- situations */}
