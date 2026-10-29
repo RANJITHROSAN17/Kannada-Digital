@@ -9,6 +9,9 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -18,22 +21,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install web deps
         run: npm ci
 
       - name: Install desktop deps
-        run: cd desktop && npm ci
+        run: cd desktop && npm install
+
+      - name: Create desktop/bin directory
+        run: mkdir -p desktop/bin
 
       - name: Build whisper.cpp
         shell: pwsh
         run: |
-          git clone --depth 1 https://github.com/ggml-org/whisper.cpp.git $env:TEMP\whisper.cpp
-          cd $env:TEMP\whisper.cpp
+          git clone --depth 1 https://github.com/ggml-org/whisper.cpp.git "$env:TEMP\whisper.cpp"
+          cd "$env:TEMP\whisper.cpp"
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release -j4
-          Copy-Item build\bin\whisper-cli.exe ..\..\Kannada-Digital\desktop\bin\whisper-cli.exe -Force
+          Copy-Item build\bin\whisper-cli.exe "$env:GITHUB_WORKSPACE\desktop\bin\whisper-cli.exe" -Force
 
       - name: Download Whisper small model
         shell: pwsh
@@ -43,12 +48,12 @@ jobs:
       - name: Build espeak-ng
         shell: pwsh
         run: |
-          git clone --depth 1 https://github.com/espeak-ng/espeak-ng.git $env:TEMP\espeak-ng
-          cd $env:TEMP\espeak-ng
+          git clone --depth 1 https://github.com/espeak-ng/espeak-ng.git "$env:TEMP\espeak-ng"
+          cd "$env:TEMP\espeak-ng"
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build -j4
-          Copy-Item build\src\espeak-ng.exe ..\..\Kannada-Digital\desktop\bin\espeak-ng.exe -Force
-          Copy-Item build\espeak-ng-data ..\..\Kannada-Digital\desktop\bin\espeak-ng-data -Recurse -Force
+          Copy-Item build\src\espeak-ng.exe "$env:GITHUB_WORKSPACE\desktop\bin\espeak-ng.exe" -Force
+          Copy-Item build\espeak-ng-data "$env:GITHUB_WORKSPACE\desktop\bin\espeak-ng-data" -Recurse -Force
 
       - name: Build web app
         run: npm run build
@@ -63,8 +68,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: |
-            release/Kannada Saathi Setup *.exe
+          files: release/*.exe
           body: |
             Kannada Saathi Desktop v$GITHUB_REF_NAME
 
