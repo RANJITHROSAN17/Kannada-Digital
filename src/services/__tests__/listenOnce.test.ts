@@ -215,6 +215,31 @@ describe('listenOnce() continuous accumulation', () => {
     expect(FakeRecognition.instances).toHaveLength(2); // no third session
   });
 
+  it('reports aborted with the real code and a clear message, then retries', () => {
+    const onError = vi.fn();
+    listenOnce({ lang: 'en-US', onInterim: vi.fn(), onFinal: vi.fn(), onError });
+    const first = FakeRecognition.instances[0];
+
+    first.emitError('aborted');
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0]?.[0]).toBe('aborted');
+    expect(onError.mock.calls[0]?.[1]).toContain('stopped before your words');
+    expect(onError.mock.calls[0]?.[1]).toContain('clicking anywhere');
+
+    first.emitEnd();
+    expect(FakeRecognition.instances).toHaveLength(2); // aborted is retried once
+  });
+
+  it('silently ignores an abort that we caused ourselves', () => {
+    const onError = vi.fn();
+    const handle = listenOnce({ lang: 'en-US', onInterim: vi.fn(), onFinal: vi.fn(), onError });
+    const recognition = FakeRecognition.instances[0];
+
+    handle.stop(); // user tapped stop → Chrome may fire aborted afterwards
+    recognition.emitError('aborted');
+    expect(onError).not.toHaveBeenCalled();
+  });
+
   it('speaks with continuous mode, like LiveBridge', () => {
     listenOnce({ lang: 'kn-IN', onInterim: vi.fn(), onFinal: vi.fn() });
     const recognition = FakeRecognition.instances[0];

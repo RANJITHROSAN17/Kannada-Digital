@@ -418,8 +418,9 @@ export function listenOnce(options: ListenOptions): ListenHandle {
     }
   };
 
-  /** Errors that a retry can plausibly fix (transient network drops, a missed first attempt). */
-  const retryableError = (code: string | null) => code === null || code === 'network' || code === 'no-speech';
+  /** Errors that a retry can plausibly fix (transient network drops, a missed first attempt, Chrome cancelling a session on its own). */
+  const retryableError = (code: string | null) =>
+    code === null || code === 'network' || code === 'no-speech' || code === 'aborted';
 
   /** Deliver the recognized sentence and close the turn. */
   const finishTurn = () => {
@@ -477,6 +478,7 @@ export function listenOnce(options: ListenOptions): ListenHandle {
       if (code === 'aborted' && stoppedByUs) return;
       lastError = code;
       const friendly: Record<string, string> = {
+        'aborted': 'Listening was stopped before your words came through — clicking anywhere on the page, or another app taking the microphone, cancels Chrome\'s listening. Tap the mic again and speak in one go.',
         'no-speech': 'No speech was detected. Tap the mic and say the whole sentence in one go.',
         'not-allowed': 'Microphone permission was blocked. Allow it in the address bar, or type the phrase.',
         'permission-denied': 'Microphone permission was denied. You can type the phrase instead.',
@@ -484,7 +486,7 @@ export function listenOnce(options: ListenOptions): ListenHandle {
         network: 'Speech recognition needs the network and could not reach it. Type the phrase instead.',
         'service-not-allowed': 'The browser blocked its speech service. Type the phrase instead.',
       };
-      onError?.(code in friendly ? (code as ListenErrorCode) : 'unknown', friendly[code] ?? `Recognition error: ${code}`);
+      onError?.(code as ListenErrorCode, friendly[code] ?? `Recognition error: ${code}`);
     };
 
     recognition.onend = () => {

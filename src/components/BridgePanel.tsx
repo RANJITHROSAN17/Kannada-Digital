@@ -42,6 +42,9 @@ function LiveCaption({
         <p className="mt-1.5 min-h-[2.75rem] text-base font-semibold leading-snug text-ink-800">
           {interim || <span className="font-normal italic text-ink-400">Start talking now…</span>}
         </p>
+        <p className="mt-1 text-[10px] leading-snug text-rose-600/80">
+          Tip: don't click anywhere else while speaking — Chrome stops listening when you do.
+        </p>
       </div>
     );
   }

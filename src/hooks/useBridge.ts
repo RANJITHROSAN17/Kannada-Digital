@@ -243,6 +243,15 @@ export function useBridge(): BridgeHook {
         setYour((state) => ({ ...state, input: text, interim: '', status: 'idle' }));
         void runYourTranslation(text);
       },
+      onEnd: () => {
+        // The browser ended the session without hearing anything. If an
+        // error was already shown, keep it; otherwise let the user tap again.
+        setYour((state) => ({
+          ...state,
+          status: state.status === 'listening' ? 'idle' : state.status,
+          interim: '',
+        }));
+      },
       onError: (code, message) => {
         setYour((state) => ({ ...state, status: 'error', error: `${message} (error code: ${code})`, interim: '' }));
       },
@@ -316,6 +325,13 @@ export function useBridge(): BridgeHook {
       onFinal: (text) => {
         setThem((state) => ({ ...state, input: text, interim: '', status: 'idle' }));
         void runTheirTranslation(text);
+      },
+      onEnd: () => {
+        setThem((state) => ({
+          ...state,
+          status: state.status === 'listening' ? 'idle' : state.status,
+          interim: '',
+        }));
       },
       onError: (code, message) => {
         setThem((state) => ({ ...state, status: 'error', error: `${message} (error code: ${code})`, interim: '' }));
