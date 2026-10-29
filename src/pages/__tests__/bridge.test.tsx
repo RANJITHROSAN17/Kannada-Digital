@@ -81,4 +81,57 @@ describe('BridgePage', () => {
     // must still render and point to the typed fallback.
     expect(screen.getAllByText(/Type an English sentence…|not in this browser/i).length).toBeGreaterThan(0);
   });
+
+  it('diagnoses a microphone that sends no audio to the page', async () => {
+    // Fake speech recognition so the hook believes the browser can listen.
+    class FakeRecognition {
+      static list: FakeRecognition[] = [];
+      lang = '';
+      continuous = false;
+      interimResults = false;
+      maxAlternatives = 1;
+      onstart: (() => void) | null = null;
+      onresult: ((event: unknown) => void) | null = null;
+      onerror: ((event: unknown) => void) | null = null;
+      onend: (() => void) | null = null;
+      start() {}
+      stop() {}
+      abort() {}
+      emitError(code: string) {
+        this.onerror?.({ error: code });
+      }
+      emitEnd() {
+        this.onend?.();
+      }
+      constructor() {
+        FakeRecognition.list.push(this);
+      }
+    }
+    (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition =
+      FakeRecognition;
+    // jsdom has no audio engine — the level meter must report that clearly.
+    Object.defineProperty(navigator, 'mediaDevices', {
+      value: { getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [] }) },
+      configurable: true,
+    });
+
+    try {
+      renderBridge();
+      fireEvent.click(screen.getByRole('button', { name: 'Test microphone' }));
+
+      // First session hears nothing → retried once inside listenOnce.
+      FakeRecognition.list[0].emitError('no-speech');
+      FakeRecognition.list[0].emitEnd();
+      // The retry hears nothing either → the test reports the diagnosis.
+      FakeRecognition.list[1].emitError('no-speech');
+      FakeRecognition.list[1].emitEnd();
+
+      await waitFor(() =>
+        expect(screen.getByText(/The browser cannot capture audio at all/)).toBeInTheDocument(),
+      );
+    } finally {
+      delete (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition;
+      delete (navigator as unknown as { mediaDevices?: unknown }).mediaDevices;
+    }
+  });
 });

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { detectCapabilities, listenOnce, speak, stopSpeaking } from '../services/speech';
+import { startMicLevel, type MicLevelHandle } from '../services/micLevel';
 import {
   translateToEnglish,
   translateToKannada,
@@ -65,6 +66,8 @@ export interface BridgeHook {
   copiedKey: string | null;
   /** Result of the one-tap microphone self-test (diagnostics). */
   micTest: MicTestResult;
+  /** Live 0..1 microphone input level while testing (null = not metering). */
+  micLevel: number | null;
   testMicrophone: () => void;
   setYourInput: (value: string) => void;
   setTheirInput: (value: string) => void;
@@ -87,8 +90,13 @@ export function useBridge(): BridgeHook {
   const [transcript, setTranscript] = useState<BridgeTranscriptEntry[]>([]);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [micTest, setMicTest] = useState<MicTestResult>({ status: 'idle', detail: '' });
+  const [micLevel, setMicLevel] = useState<number | null>(null);
 
   const listenerRef = useRef<{ stop: () => void } | null>(null);
+  const levelStopRef = useRef<MicLevelHandle | null>(null);
+  const levelErrorRef = useRef<string | null>(null);
+  const levelMovedRef = useRef(false);
+  const pendingTestErrorRef = useRef<{ code: string; message: string } | null>(null);
   const autoFlowRef = useRef(false);
   const autoArmedRef = useRef(false);
   const entryIdRef = useRef(0);
@@ -101,6 +109,7 @@ export function useBridge(): BridgeHook {
   useEffect(
     () => () => {
       listenerRef.current?.stop();
+      levelStopRef.current?.stop();
       stopSpeaking();
     },
     [],
@@ -342,9 +351,10 @@ export function useBridge(): BridgeHook {
   /* -------------------------------------------------- microphone self-test */
 
   /**
-   * One-tap diagnostic: runs a real recognition session and reports what
-   * happened — including the raw error code, so a failed microphone can be
-   * told apart from a blocked permission or an unreachable speech service.
+   * One-tap diagnostic: runs a live microphone level meter AND a real
+   * recognition session. Together they tell apart (a) a microphone that
+   * cannot capture audio at all, (b) a microphone that works but a broken
+   * Chrome speech service, and (c) a working microphone hearing real words.
    */
   const testMicrophone = () => {
     if (!canMic) {
@@ -358,8 +368,40 @@ export function useBridge(): BridgeHook {
       });
       return;
     }
-    setMicTest({ status: 'testing', detail: 'Listening — say one word, then pause.' });
+
+    levelMovedRef.current = false;
+    levelErrorRef.current = null;
+    pendingTestErrorRef.current = null;
+    setMicLevel(0);
+    setMicTest({
+      status: 'testing',
+      detail: 'Say one word, then pause — the level bar should move while you speak.',
+    });
+
     listenerRef.current?.stop();
+    levelStopRef.current?.stop();
+    levelStopRef.current = startMicLevel({
+      onLevel: (level) => {
+        setMicLevel(level);
+        if (level > 0.04) levelMovedRef.current = true;
+      },
+      onError: (message) => {
+        levelErrorRef.current = message;
+      },
+    });
+
+    const finish = (status: 'ok' | 'fail', detail: string) => {
+      levelStopRef.current?.stop();
+      levelStopRef.current = null;
+      setMicLevel(null);
+      listenerRef.current = null;
+      setMicTest({ status, detail });
+    };
+
+    const noAudioDetail =
+      'No audio reached the page. Check Windows: Settings → Privacy → Microphone ' +
+      '(allow apps to access the microphone), and your microphone device in the volume mixer.';
+
     listenerRef.current = listenOnce({
       lang: 'en-US',
       onInterim: (text) =>
@@ -368,26 +410,43 @@ export function useBridge(): BridgeHook {
             ? { status: 'testing', detail: `Heard so far: "${text}" — keep going or pause.` }
             : state,
         ),
-      onFinal: (text) => {
-        setMicTest({ status: 'ok', detail: `Heard: "${text}" — your microphone works.` });
-        listenerRef.current = null;
-      },
+      onFinal: (text) => finish('ok', `Heard: "${text}" — your microphone works.`),
       onError: (code, message) => {
-        setMicTest({ status: 'fail', detail: `${message} (error code: ${code})` });
-        listenerRef.current = null;
+        // Retryable errors (no-speech, network, aborted) get one silent
+        // retry inside listenOnce — wait for its outcome via onEnd.
+        pendingTestErrorRef.current = { code, message };
       },
       onEnd: () => {
-        setMicTest((state) =>
-          state.status === 'testing'
-            ? {
-                status: 'fail',
-                detail:
-                  'Recognition ended without hearing anything. Check the microphone ' +
-                  'permission in your browser and try again.',
-              }
-            : state,
-        );
-        listenerRef.current = null;
+        if (levelErrorRef.current) {
+          finish('fail', `${levelErrorRef.current} The browser cannot capture audio at all.`);
+          return;
+        }
+        const pending = pendingTestErrorRef.current;
+        if (pending?.code === 'no-speech') {
+          if (levelMovedRef.current) {
+            finish(
+              'fail',
+              "Microphone is working (the level bar moved), but Chrome's speech service heard nothing — " +
+                'a Chrome-side problem. Try Microsoft Edge, or the typed boxes.',
+            );
+          } else {
+            finish('fail', noAudioDetail);
+          }
+          return;
+        }
+        if (pending) {
+          finish('fail', `${pending.message} (error code: ${pending.code})`);
+          return;
+        }
+        if (levelMovedRef.current) {
+          finish(
+            'fail',
+            'Microphone is working, but the recognition session ended without hearing anything — ' +
+              'a Chrome-side problem. Try Microsoft Edge, or the typed boxes.',
+          );
+        } else {
+          finish('fail', noAudioDetail);
+        }
       },
     });
   };
@@ -401,6 +460,7 @@ export function useBridge(): BridgeHook {
     transcript,
     copiedKey,
     micTest,
+    micLevel,
     testMicrophone,
     setYourInput,
     setTheirInput,

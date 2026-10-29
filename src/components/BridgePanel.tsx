@@ -17,6 +17,27 @@ import { Card, Chip, ScriptText, StatusLine } from '../components/ui';
 import { cn } from '../utils/cn';
 
 /**
+ * Live microphone input level while the self-test runs. A flat bar while
+ * speaking means no audio is reaching the page at all.
+ */
+function MicLevelBar({ level }: { level: number | null }) {
+  const pct = Math.round((level ?? 0) * 100);
+  const moving = level !== null && level > 0.04;
+  return (
+    <div className="h-2 w-full overflow-hidden rounded-full bg-ink-100">
+      <div
+        className={cn(
+          'h-full rounded-full transition-[width] duration-75 ease-out',
+          moving ? 'bg-leaf-500' : 'bg-ink-300',
+        )}
+        style={{ width: `${pct}%` }}
+        aria-hidden="true"
+      />
+    </div>
+  );
+}
+
+/**
  * Live caption while the microphone is open — the words appear as they are
  * recognised, like LiveBridge's caption panel. After a final result the
  * recognised sentence stays visible until the translation takes over.
@@ -100,6 +121,7 @@ export function BridgePanel({
     transcript,
     copiedKey,
     micTest,
+    micLevel,
     testMicrophone,
     setYourInput,
     setTheirInput,
@@ -224,11 +246,17 @@ export function BridgePanel({
       </Card>
 
       {micTest.status !== 'idle' ? (
-        <StatusLine
-          tone={micTest.status === 'ok' ? 'good' : micTest.status === 'fail' ? 'error' : 'info'}
-        >
-          {micTest.detail}
-        </StatusLine>
+        <Card className="p-4">
+          <h2 className="text-sm font-bold text-ink-700">Microphone check</h2>
+          {micTest.status === 'testing' ? (
+            <div className="mt-2 space-y-2">
+              <p className="text-[13px] leading-relaxed text-ink-500">{micTest.detail}</p>
+              <MicLevelBar level={micLevel} />
+            </div>
+          ) : (
+            <StatusLine tone={micTest.status === 'ok' ? 'good' : 'error'}>{micTest.detail}</StatusLine>
+          )}
+        </Card>
       ) : null}
 
       {/* ------------------------------------------------------------ your turn */}
