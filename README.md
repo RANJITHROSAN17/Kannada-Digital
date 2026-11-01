@@ -504,3 +504,7 @@ Full severity-ranked findings, verification evidence, remaining recommendations 
 <p><sub>Offline-first · No API key · 133 tests · 0 vulnerabilities</sub></p>
 
 </div>
+
+## Maintainer
+
+**[Ranjith Rosan](https://github.com/RANJITHROSAN17)** maintains Kannada Saathi, the everyday Kannada learning companion in this repository. Existing language-review, audio and third-party credits remain applicable.
