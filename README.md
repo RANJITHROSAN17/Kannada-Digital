@@ -7,8 +7,8 @@
 <p>
   <a href="https://github.com/RANJITHROSAN17/Kannada-Digital/actions/workflows/ci.yml"><img src="https://github.com/RANJITHROSAN17/Kannada-Digital/actions/workflows/ci.yml/badge.svg" alt="CI" height="20"></a>
   <a href="https://github.com/RANJITHROSAN17/Kannada-Digital/actions/workflows/deploy.yml"><img src="https://github.com/RANJITHROSAN17/Kannada-Digital/actions/workflows/deploy.yml/badge.svg" alt="Deploy" height="20"></a>
-  <a href="docs/REVIEW.md"><img src="https://img.shields.io/badge/tests-83%20passing-2ea44f?style=flat-square" alt="133 tests passing" height="20"></a>
-  <a href="docs/REVIEW.md"><img src="https://img.shields.io/badge/npm%20audit-0%20vulnerabilities-2ea44f?style=flat-square" alt="0 vulnerabilities" height="20"></a>
+  <a href="docs/REVIEW.md">Recorded engineering review</a>
+  <a href=".github/workflows/ci.yml">Current test and dependency checks</a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MIT-3b6cb0?style=flat-square" alt="MIT licence" height="20"></a>
   <a href="public/manifest.webmanifest"><img src="https://img.shields.io/badge/PWA-installable-6f5bd6?style=flat-square" alt="Installable PWA" height="20"></a>
 </p>
@@ -32,6 +32,12 @@
 > **Problem Statement #3 — Kannada in Everyday Life** (#2 *Voice of Kannada* as a supporting capability).
 
 ---
+
+## Try one real situation first
+
+Open the [live app](https://ranjithrosan17.github.io/Kannada-Digital/) and choose an everyday situation, read a phrase and play its bundled audio. Start online so the app can cache its assets before testing offline behavior. A first successful session means finding and hearing a useful phrase—not completing the entire phrase library.
+
+Offline availability depends on installation/cache state and browser storage, which can be cleared or evicted. A recorded audit result is a snapshot, not a promise of zero future vulnerabilities; use the latest CI run for current checks. For emergency or medically consequential communication, seek a qualified speaker or interpreter rather than relying on this learning aid.
 
 ## Status at a glance
 
@@ -498,3 +504,7 @@ Full severity-ranked findings, verification evidence, remaining recommendations 
 <p><sub>Offline-first · No API key · 133 tests · 0 vulnerabilities</sub></p>
 
 </div>
+
+## Maintainer
+
+**[Ranjith Rosan](https://github.com/RANJITHROSAN17)** maintains Kannada Saathi, the everyday Kannada learning companion in this repository. Existing language-review, audio and third-party credits remain applicable.
